@@ -76,6 +76,12 @@ Begeistere die Teilnehmer für Deine Veranstaltung. Verbreite das Wort mit autom
 
 == ChangeLog ==
 
+= 1.0.1 =
+
+* Security: Escaping, Input-Sanitization und Nonce/Capability-Checks verbessert
+* Fix: SQL/AJAX-Sicherheitsfixes und weitere WPCS-Anpassungen
+* Compatibility: Verbesserungen fuer PHP 8+
+
 = 1.0.0 =
 
 * Release

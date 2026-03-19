@@ -150,18 +150,29 @@ class Eab_Events_EventCountdown {
 	 */	
 	function shortcode( $atts ) {
 
-		extract( shortcode_atts( array(
-		'id'		=> '',
-		'event_id'	=> '',
-		'format'	=> 'dHMS',
-		'goto'		=> '',
-		'class'		=> '',
-		'type'		=> '',
-		'size'		=> 70,
-		'add'		=> 0,
-		'footer_script' => false,
-		'expired'	=> __('Geschlossen', 'eab')
-		), $atts ) );
+		$atts = shortcode_atts( array(
+			'id'            => '',
+			'event_id'      => '',
+			'format'        => 'dHMS',
+			'goto'          => '',
+			'class'         => '',
+			'type'          => '',
+			'size'          => 70,
+			'add'           => 0,
+			'footer_script' => false,
+			'expired'       => __('Geschlossen', 'eab'),
+		), $atts );
+
+		$id            = sanitize_html_class( $atts['id'] );
+		$event_id      = absint( $atts['event_id'] );
+		$format        = sanitize_text_field( $atts['format'] );
+		$goto          = esc_url_raw( $atts['goto'] );
+		$class         = sanitize_html_class( $atts['class'] );
+		$type          = sanitize_text_field( $atts['type'] );
+		$size          = absint( $atts['size'] );
+		$add           = intval( $atts['add'] );
+		$footer_script = (bool) $atts['footer_script'];
+		$expired       = sanitize_text_field( $atts['expired'] );
 		
 		$this->add_countdown = true;
 		

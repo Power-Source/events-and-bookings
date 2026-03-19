@@ -23,8 +23,11 @@ class Eab_Popular_Widget extends Eab_Widget {
     
     function widget ($args, $instance) {
 		global $wpdb, $current_site, $post, $wiki_tree;
-		
-		extract($args);
+
+		$before_widget = isset( $args['before_widget'] ) ? $args['before_widget'] : '';
+		$after_widget  = isset( $args['after_widget'] )  ? $args['after_widget']  : '';
+		$before_title  = isset( $args['before_title'] )  ? $args['before_title']  : '';
+		$after_title   = isset( $args['after_title'] )   ? $args['after_title']   : '';
 		
 		$instance = apply_filters('eab-widgets-popular-instance_read', $instance, $this);
 		$options = wp_parse_args((array)$instance, $this->_defaults);
@@ -41,8 +44,8 @@ class Eab_Popular_Widget extends Eab_Widget {
 		));
 		if (is_array($_events) && count($_events) > 0) {
 		?>
-		<?php echo $before_widget; ?>
-		<?php echo $before_title . $title . $after_title; ?>
+		<?php echo wp_kses_post( $before_widget ); ?>
+		<?php echo wp_kses_post( $before_title ) . esc_html( $title ) . wp_kses_post( $after_title ); ?>
 	            <div id="event-popular">
 			<ul>
 			    <?php
@@ -59,14 +62,14 @@ class Eab_Popular_Widget extends Eab_Widget {
 					}
 			    ?>
 				<li>
-					<a href="<?php print get_permalink($_event->get_id()); ?>" class="<?php print ($post instanceof WP_Post && $_event->get_id() == $post->ID) ? 'current' : 'not_current'; ?>" >
+					<a href="<?php echo esc_url( get_permalink( $_event->get_id() ) ); ?>" class="<?php echo ( $post instanceof WP_Post && $_event->get_id() == $post->ID ) ? 'current' : 'not_current'; ?>" >
 						<?php if ($options['thumbnail'] && $thumbnail) { ?>
-							<img src="<?php echo $thumbnail; ?>" /><br />
+							<img src="<?php echo esc_url( $thumbnail ); ?>" /><br />
 						<?php } ?>
-						<?php print $_event->get_title(); ?>
+						<?php echo esc_html( $_event->get_title() ); ?>
 					</a>
 					<?php if ($options['excerpt'] && $excerpt) { ?>
-						<p><?php echo $excerpt; ?></p>
+						<p><?php echo wp_kses_post( $excerpt ); ?></p>
 					<?php } ?>
 					<?php do_action('eab-widgets-popular-after_event', $options, $_event, $this); ?>
 				</li>
@@ -76,13 +79,13 @@ class Eab_Popular_Widget extends Eab_Widget {
 			</ul>
 	            </div>
 	        <br />
-	        <?php echo $after_widget; ?>
+	        <?php echo wp_kses_post( $after_widget ); ?>
 		<?php
 		} else {
-			echo $before_widget .
-				$before_title . $title . $after_title .
-				'<p class="eab-widget-no_events">' . __('Keine beliebten Veranstaltungen.', 'eab') . '</p>' .
-			$after_widget;
+			echo wp_kses_post( $before_widget ) .
+				wp_kses_post( $before_title ) . esc_html( $title ) . wp_kses_post( $after_title ) .
+				'<p class="eab-widget-no_events">' . esc_html__('Keine beliebten Veranstaltungen.', 'eab') . '</p>' .
+			wp_kses_post( $after_widget );
 		}
     }
     

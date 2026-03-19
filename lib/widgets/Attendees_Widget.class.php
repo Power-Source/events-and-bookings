@@ -15,9 +15,12 @@ class Eab_Attendees_Widget extends Eab_Widget {
     
     function widget ($args, $instance) {
 		global $wpdb, $current_site, $post, $wiki_tree;
-	
-		extract($args);
-	
+
+		$before_widget = isset( $args['before_widget'] ) ? $args['before_widget'] : '';
+		$after_widget  = isset( $args['after_widget'] )  ? $args['after_widget']  : '';
+		$before_title  = isset( $args['before_title'] )  ? $args['before_title']  : '';
+		$after_title   = isset( $args['after_title'] )   ? $args['after_title']   : '';
+
 		if ( $post->post_type != 'psource_event') {
 		    return;
 		}
@@ -28,8 +31,8 @@ class Eab_Attendees_Widget extends Eab_Widget {
 		$title = apply_filters('widget_title', empty($instance['title']) ? __('Teilnehmer', $this->translation_domain) : $instance['title'], $instance, $this->id_base);	
 ?>
 <?php if (is_single() && $event->has_bookings()) { ?>
-	<?php echo $before_widget; ?>
-	<?php echo $before_title . $title . $after_title; ?>
+	<?php echo wp_kses_post( $before_widget ); ?>
+	<?php echo wp_kses_post( $before_title ) . esc_html( $title ) . wp_kses_post( $after_title ); ?>
     <div id="event-bookings">
         <div id="event-booking-yes">
             <?php echo Eab_Template::get_bookings(Eab_EventModel::BOOKING_YES, $event); ?>
@@ -40,7 +43,7 @@ class Eab_Attendees_Widget extends Eab_Widget {
         </div>
     </div>
     <br />
-<?php echo $after_widget; ?>
+<?php echo wp_kses_post( $after_widget ); ?>
         <?php } ?>
 	<?php
     }
@@ -65,9 +68,9 @@ class Eab_Attendees_Widget extends Eab_Widget {
 	
 	?>
 <div style="text-align:left">
-    <label for="<?php echo $this->get_field_id('title'); ?>" style="line-height:35px;display:block;">
+    <label for="<?php echo esc_attr( $this->get_field_id('title') ); ?>" style="line-height:35px;display:block;">
     	<?php _e('Titel', $this->translation_domain); ?>:<br />
-		<input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" value="<?php echo $options['title']; ?>" type="text" style="width:95%;" />
+		<input class="widefat" id="<?php echo esc_attr( $this->get_field_id('title') ); ?>" name="<?php echo esc_attr( $this->get_field_name('title') ); ?>" value="<?php echo esc_attr( $options['title'] ); ?>" type="text" style="width:95%;" />
     </label>
     <input type="hidden" name="eab-submit" id="eab-submit" value="attendees" />
 </div>

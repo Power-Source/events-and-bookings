@@ -28,7 +28,10 @@ class Eab_Daily_Widget extends Eab_Widget {
     function widget( $args, $instance ) {
 	global $wpdb, $current_site, $post, $wiki_tree;
 
-	extract( $args );
+	$before_widget = isset( $args['before_widget'] ) ? $args['before_widget'] : '';
+	$after_widget  = isset( $args['after_widget'] )  ? $args['after_widget']  : '';
+	$before_title  = isset( $args['before_title'] )  ? $args['before_title']  : '';
+	$after_title   = isset( $args['after_title'] )   ? $args['after_title']   : '';
 
 	$instance = apply_filters( 'eab-widgets-daily-instance_read', $instance, $this );
 	$options = wp_parse_args( ( array ) $instance, $this->_defaults );
@@ -56,21 +59,21 @@ class Eab_Daily_Widget extends Eab_Widget {
 	    $date = date( 'Y-m-d', eab_current_time() );
 	}
 
-	/*$ddate = create_function( '', 'return "' . $date . '";' );*/
-	$ddate = function($date) {return "' . $date . '";};
+	$ddate_val = $date;
+	$ddate = function() use ( $ddate_val ) { return $ddate_val; };
 
 	add_filter( 'eab-collection-daily_events_date', $ddate );
 	$_events = Eab_CollectionFactory::get_daily_events( eab_current_time(), $query_args );
 
 	if ( is_array( $_events ) && count( $_events ) > 0 ) {
-	    echo $before_widget;
-	    echo $before_title . $title . $after_title;
+	    echo wp_kses_post( $before_widget );
+	    echo wp_kses_post( $before_title ) . esc_html( $title ) . wp_kses_post( $after_title );
 	    echo '<div id="event-popular"><ul>';
 	    foreach ( $_events as $_event ) {
 		$thumbnail = $excerpt = false;
 		if ( $options[ 'thumbnail' ] ) {
 		    $raw = wp_get_attachment_image_src( get_post_thumbnail_id( $_event->get_id() ) );
-		    $thumbnail = $raw ? @$raw[ 0 ] : false;
+		    $thumbnail = $raw ? esc_url( $raw[ 0 ] ) : false;
 		}
 		$excerpt = false;
 		if ( !empty( $options[ 'excerpt' ] ) ) {
@@ -78,23 +81,22 @@ class Eab_Daily_Widget extends Eab_Widget {
 		    $excerpt = eab_call_template( 'util_words_limit', $_event->get_excerpt_or_fallback(), $words );
 		}
 		echo '<li>';
-		echo '<a href="' . get_permalink( $_event->get_id() ) . '" class="' . ($post instanceof WP_Post && $_event->get_id() == $post->ID ? 'current' : 'not_current') . '" >' .
-		($options[ 'thumbnail' ] && $thumbnail ? '<img src="' . $thumbnail . '" /><br />' : ''
-		) .
-		$_event->get_title() .
+		echo '<a href="' . esc_url( get_permalink( $_event->get_id() ) ) . '" class="' . ( $post instanceof WP_Post && $_event->get_id() == $post->ID ? 'current' : 'not_current' ) . '" >' .
+		( $options[ 'thumbnail' ] && $thumbnail ? '<img src="' . $thumbnail . '" /><br />' : '' ) .
+		esc_html( $_event->get_title() ) .
 		'</a>';
 		if ( !empty( $options[ 'dates' ] ) )
-		    echo '<div class="psourceevents-date">' . Eab_Template::get_event_dates( $_event ) . '</div>';
+		    echo '<div class="psourceevents-date">' . wp_kses_post( Eab_Template::get_event_dates( $_event ) ) . '</div>';
 		if ( !empty( $options[ 'excerpt' ] ) && !empty( $excerpt ) )
-		    echo '<p>' . $excerpt . '</p>';
+		    echo '<p>' . wp_kses_post( $excerpt ) . '</p>';
 		do_action( 'eab-widgets-daily-after_event', $options, $_event, $this );
 		echo '</li>';
 	    }
 	    echo '</ul></div>';
-	    echo $after_widget;
+	    echo wp_kses_post( $after_widget );
 	} else {
-	    echo $before_widget .
-	    $before_title . $title . $after_title .
+	    echo wp_kses_post( $before_widget ) .
+	    wp_kses_post( $before_title ) . esc_html( $title ) . wp_kses_post( $after_title ) .
 	    '<p class="eab-widget-no_events">' . __( 'Keine Ereignisse heute.', 'eab' ) . '</p>' .
 	    $after_widget;
 	}

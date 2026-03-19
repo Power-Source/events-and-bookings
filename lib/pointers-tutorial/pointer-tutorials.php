@@ -349,7 +349,8 @@ if ( !class_exists( 'Pointer_Tutorial' ) ) {
 .wp-pointer-buttons a.prev { float: left; }
 .wp-pointer-buttons a.dismiss {	color: #FFFFFF; font-size: 10px; position: absolute; right: 3px; top: 1px; }
 .wp-pointer-buttons span.tut-step {	font-size: 9px; font-size: 9px; left: 0; bottom: -3px; position: absolute; text-align: center; width: 100%; }';
-				echo $this->admin_css;
+				// Security: Strip any HTML tags from CSS - only allow safe CSS
+				echo wp_strip_all_tags( $this->admin_css );
 				echo "\n</style>\n";
 			}
 		}
@@ -359,6 +360,11 @@ if ( !class_exists( 'Pointer_Tutorial' ) ) {
 		 *
 		 */
 		function ajax_dismiss() {
+			// Security: only logged in users with capability
+			if ( !current_user_can( $this->capability ) ) {
+				die( '0' );
+			}
+			
 			if ( !is_numeric($_POST['pointer']) )
 				die( '0' );
 			
@@ -400,7 +406,9 @@ if ( !class_exists( 'Pointer_Tutorial' ) ) {
 			foreach ( $this->page_pointers as $pointer_id => $settings) {
 				$count++;
 				
-				extract( $settings );
+				// Security: Explizite Variablen statt extract()
+				$args     = isset( $settings['args'] ) ? $settings['args'] : array();
+				$selector = isset( $settings['selector'] ) ? $settings['selector'] : '';
 				
 				//add our tutorial class for styling
 				if (empty($args['pointerClass']))
@@ -417,12 +425,12 @@ if ( !class_exists( 'Pointer_Tutorial' ) ) {
 				$last_step = false;
 				if ( $count >= count($this->page_pointers) && isset($this->registered_pointers[$pointer_id+1]) ) {
 					$next_url = $this->registered_pointers[$pointer_id+1]['url'];
-					$next_link = ", function() { window.location = '$next_url'; }";
+					$next_link = ", function() { window.location = '" . esc_js( esc_url( $next_url ) ) . "'; }";
 					$next_title = $this->registered_pointers[$pointer_id+1]['title'];
 				} else if ( isset($this->page_pointers[$pointer_id+1]) ) {
-					$next_pointer = $this->page_pointers[$pointer_id+1]['selector'];
+					$next_pointer_sel = $this->page_pointers[$pointer_id+1]['selector'];
 					$next_pointer_id = $pointer_id + 1;
-					$next_pointer = "$('$next_pointer').pointer( options$next_pointer_id ).pointer('open').focus();";
+					$next_pointer = "$( '" . esc_js( $next_pointer_sel ) . "' ).pointer( options" . intval( $next_pointer_id ) . " ).pointer('open').focus();";
 					$next_title = $this->page_pointers[$pointer_id+1]['title'];
 				} else {
 					$next_name = __('Verstanden', 'eab');
@@ -435,12 +443,12 @@ if ( !class_exists( 'Pointer_Tutorial' ) ) {
 				$prev_name = __('&laquo; Vorherige', 'eab');
 				if ( $count == 1 && isset($this->registered_pointers[$pointer_id-1]) ) { //if first step for the page and theres a previous page
 					$prev_url = $this->registered_pointers[$pointer_id-1]['url'];
-					$prev_link = ", function() { window.location = '$prev_url'; }";
+					$prev_link = ", function() { window.location = '" . esc_js( esc_url( $prev_url ) ) . "'; }";
 					$prev_title = $this->registered_pointers[$pointer_id-1]['title'];
 				} else if ( isset($this->page_pointers[$pointer_id-1]) ) {
-					$prev_pointer = $this->page_pointers[$pointer_id-1]['selector'];
+					$prev_pointer_sel = $this->page_pointers[$pointer_id-1]['selector'];
 					$prev_pointer_id = $pointer_id - 1;
-					$prev_pointer = "$('$prev_pointer').pointer( options$prev_pointer_id ).pointer('open').focus();";
+					$prev_pointer = "$( '" . esc_js( $prev_pointer_sel ) . "' ).pointer( options" . intval( $prev_pointer_id ) . " ).pointer('open').focus();";
 					$prev_title = $this->page_pointers[$pointer_id-1]['title'];
 				}
 				
@@ -512,7 +520,7 @@ if ( !class_exists( 'Pointer_Tutorial' ) ) {
 					}
 				});
 				<?php if ($pointer_id == $current_step) { ?>
-				$('<?php echo $selector; ?>').pointer( options<?php echo $pointer_id; ?> ).pointer('open');
+				$('<?php echo esc_js( $selector ); ?>').pointer( options<?php echo intval( $pointer_id ); ?> ).pointer('open');
 				<?php
 				}
 			}

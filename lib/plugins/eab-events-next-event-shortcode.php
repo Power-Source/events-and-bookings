@@ -108,12 +108,16 @@ class Eab_Events_NextEventShortcode {
 	 */	
 	private function _legacy_shortcode( $atts ) {
 
-		extract( shortcode_atts( array(
-		'format'=> 'H:i T l',
-		'class'	=> '',
-		'add'	=> 0,
-		'expired'	=> __('Geschlossen', 'eab')
-		), $atts ) );
+		$atts    = shortcode_atts( array(
+			'format'  => 'H:i T l',
+			'class'   => '',
+			'add'     => 0,
+			'expired' => __('Geschlossen', 'eab'),
+		), $atts );
+		$format  = sanitize_text_field( $atts['format'] );
+		$class   = sanitize_html_class( $atts['class'] );
+		$add     = intval( $atts['add'] );
+		$expired = sanitize_text_field( $atts['expired'] );
 		
 		if ( $class )
 			$class = " class='".$class."'";

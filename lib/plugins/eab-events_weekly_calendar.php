@@ -95,13 +95,15 @@ class Eab_CalendarTable_WeeklyEventArchiveCalendar {
 	
 	function shortcode( $attr ) {
 	
-		extract( shortcode_atts( array(
-		'id'		=> '',
-		'class'		=> ''
-		), $attr ) );
+		$atts = shortcode_atts( array(
+			'id'    => '',
+			'class' => ''
+		), $attr );
+		$id    = sanitize_html_class( $atts['id'] );
+		$class = sanitize_html_class( $atts['class'] );
 		
 		if ( isset( $_GET["wcalendar"] ) )
-			$time = $_GET["wcalendar"];
+			$time = absint( $_GET["wcalendar"] );
 		else
 			$time = $this->get_local_time();
 	
@@ -399,10 +401,11 @@ class Eab_CalendarTable_WeeklyEventArchiveCalendar {
 	 * Add Addon settings to the other admin options to be saved
 	 */	
 	function save_settings( $options ) {
-		$options['weekly_calendar_start']		= stripslashes($_POST['event_default']['weekly_calendar_start']);
-		$options['weekly_calendar_end']			= stripslashes($_POST['event_default']['weekly_calendar_end']);
-		$options['weekly_calendar_interval']	= stripslashes($_POST['event_default']['weekly_calendar_interval']);
-		$options['weekly_calendar_display']		= stripslashes($_POST['event_default']['weekly_calendar_display']);
+		$event_default = isset( $_POST['event_default'] ) && is_array( $_POST['event_default'] ) ? $_POST['event_default'] : array();
+		$options['weekly_calendar_start']    = sanitize_text_field( wp_unslash( isset( $event_default['weekly_calendar_start'] )    ? $event_default['weekly_calendar_start']    : '' ) );
+		$options['weekly_calendar_end']      = sanitize_text_field( wp_unslash( isset( $event_default['weekly_calendar_end'] )      ? $event_default['weekly_calendar_end']      : '' ) );
+		$options['weekly_calendar_interval'] = sanitize_text_field( wp_unslash( isset( $event_default['weekly_calendar_interval'] ) ? $event_default['weekly_calendar_interval'] : '' ) );
+		$options['weekly_calendar_display']  = sanitize_text_field( wp_unslash( isset( $event_default['weekly_calendar_display'] )  ? $event_default['weekly_calendar_display']  : '' ) );
 		return $options;
 	}
 	

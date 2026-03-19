@@ -301,20 +301,32 @@ EOStandardCompactCSS;
 	 */	
 	private function _legacy_shortcode( $atts ) {
 	
-		extract( shortcode_atts( array(
-		'id'		=> '',
-		'format'	=> 'dHMS',
-		'goto'		=> '',
-		'class'		=> '',
-		'type'		=> '',
-		'size'		=> 70,
-		'add'		=> 0,
-		'allow_scaling' => false, // Scaling allowing boolean switch
-		'compact' => false, // Boolean compact flag
-		'title'		=> false,
-		'footer_script' => false,
-		'expired'	=> __('Geschlossen', 'eab')
-		), $atts ) );
+		$atts = shortcode_atts( array(
+			'id'             => '',
+			'format'         => 'dHMS',
+			'goto'           => '',
+			'class'          => '',
+			'type'           => '',
+			'size'           => 70,
+			'add'            => 0,
+			'allow_scaling'  => false,
+			'compact'        => false,
+			'title'          => false,
+			'footer_script'  => false,
+			'expired'        => __('Geschlossen', 'eab'),
+		), $atts );
+		$id             = sanitize_html_class( $atts['id'] );
+		$format         = sanitize_text_field( $atts['format'] );
+		$goto           = esc_url_raw( $atts['goto'] );
+		$class          = sanitize_html_class( $atts['class'] );
+		$type           = sanitize_text_field( $atts['type'] );
+		$size           = absint( $atts['size'] );
+		$add            = intval( $atts['add'] );
+		$allow_scaling  = (bool) $atts['allow_scaling'];
+		$compact        = (bool) $atts['compact'];
+		$title          = $atts['title'] ? sanitize_text_field( $atts['title'] ) : false;
+		$footer_script  = (bool) $atts['footer_script'];
+		$expired        = sanitize_text_field( $atts['expired'] );
 		
 		$id = str_replace( array(" ","'",'"'), "", $id ); // We cannot let spaces and quotes in id
 		$goto = trim( $goto );

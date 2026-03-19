@@ -158,18 +158,46 @@ class Eab_Ajax {
 	}
 
 	function process_list_rsvps() {
+		// Security: Nonce verification
+		check_ajax_referer('eab_list_rsvps_nonce', 'nonce');
+		
+		// Security: User must be logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error('Not authenticated');
+		}
+		
 		global $post;
 
-		$post = get_post($_REQUEST['pid']);
+		$post_id = intval($_REQUEST['pid']);
+		$post = get_post($post_id);
+		
+		// Security: Capability check
+		if (!$post || !current_user_can('edit_post', $post_id)) {
+			wp_send_json_error('Not authorized to view RSVPs for this post');
+		}
+		
 		echo Eab_Template::get_rsvps($post);
 
 		exit(0);
 	}
 
 	function handle_attendance_cancel () {
+		// Security: Nonce verification
+		check_ajax_referer('eab_attendance_nonce', 'nonce');
+		
+		// Security: User must be logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error('Not authenticated');
+		}
+		
 		$eab = events_and_bookings();
 		$user_id = (int)$_POST['user_id'];
 		$post_id = (int)$_POST['post_id'];
+
+		// Security: Capability check - user must be able to edit this post
+		if (!current_user_can('edit_post', $post_id)) {
+			wp_send_json_error('Not authorized to edit this post');
+		}
 
 		$post = get_post($post_id);
 		$event = new Eab_EventModel($post);
@@ -179,9 +207,22 @@ class Eab_Ajax {
 	}
 
 	function handle_attendance_delete () {
+		// Security: Nonce verification
+		check_ajax_referer('eab_attendance_nonce', 'nonce');
+		
+		// Security: User must be logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error('Not authenticated');
+		}
+		
 		$eab = events_and_bookings();
 		$user_id = (int)$_POST['user_id'];
 		$post_id = (int)$_POST['post_id'];
+
+		// Security: Capability check - user must be able to edit this post
+		if (!current_user_can('edit_post', $post_id)) {
+			wp_send_json_error('Not authorized to edit this post');
+		}
 
 		$post = get_post($post_id);
 		$event = new Eab_EventModel($post);
@@ -191,12 +232,25 @@ class Eab_Ajax {
 	}
 
 	function handle_attendance_add () {
+		// Security: Nonce verification
+		check_ajax_referer('eab_attendance_nonce', 'nonce');
+		
+		// Security: User must be logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error('Not authenticated');
+		}
+		
 		$eab = events_and_bookings();
 		$data = stripslashes_deep($_POST);
-		$email = $data['user'];
-		$status = $data['status'];
-		$post_id = (int)$data['post_id'];
+		$email = sanitize_email($data['user']);
+		$status = sanitize_text_field($data['status']);
+		$post_id = intval($data['post_id']);
 		$allowed = array(Eab_EventModel::BOOKING_YES, Eab_EventModel::BOOKING_NO, Eab_EventModel::BOOKING_MAYBE);
+
+		// Security: Capability check - user must be able to edit this post
+		if (!current_user_can('edit_post', $post_id)) {
+			wp_send_json_error('Not authorized to edit this post');
+		}
 
 		$post = get_post($post_id);
 		if (is_email($email) && $post_id && in_array($status, $allowed)) {

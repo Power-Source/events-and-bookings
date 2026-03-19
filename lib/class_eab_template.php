@@ -491,7 +491,7 @@ class Eab_Template {
 
 		$content = '';
 		if (isset($_GET['eab_success_msg'])) {
-			$status = stripslashes($_GET['eab_success_msg']);
+			$status = sanitize_text_field(wp_unslash($_GET['eab_success_msg']));
 			$message = $legacy_redirects
 				? apply_filters('eab-rsvps-status_messages-legacy_message', $status)
 				: self::get_success_message($status)
@@ -500,7 +500,7 @@ class Eab_Template {
 		}
 		
 		$content .= isset($_GET['eab_error_msg'])
-		 	? '<div id="eab-error-notice" class="message error">'.esc_html(stripslashes($_GET['eab_error_msg'])).'</div>'
+		 	? '<div id="eab-error-notice" class="message error">' . esc_html(sanitize_text_field(wp_unslash($_GET['eab_error_msg']))) . '</div>'
 		 	: ''
 		 ;	
 		return $content;
@@ -519,9 +519,10 @@ class Eab_Template {
 				$booking_status = $event->get_user_booking_status();
 				$default_class = $booking_status ? 'ncurrent' : '';
 
-				$content .= '<form action="' . get_permalink($event->get_id()) . '" method="post" id="eab_booking_form">';
-				$content .= '<input type="hidden" name="event_id" value="' . $event->get_id() . '" />';
-				$content .= '<input type="hidden" name="user_id" value="' . $booking_id . '" />';
+				$content .= '<form action="' . esc_url( get_permalink($event->get_id()) ) . '" method="post" id="eab_booking_form">';
+				$content .= '<input type="hidden" name="event_id" value="' . intval( $event->get_id() ) . '" />';
+				$content .= '<input type="hidden" name="user_id" value="' . intval( $booking_id ) . '" />';
+				$content .= wp_nonce_field( 'event_rsvp_nonce', '_wpnonce', true, false );
 				$content .= apply_filters('eab-rsvps-button-no',
 					'<input class="' .
 						(($booking_id && $booking_status == 'no') ? 'current psourceevents-no-submit' : 'psourceevents-no-submit ' . $default_class) .

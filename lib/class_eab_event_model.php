@@ -537,23 +537,38 @@ class Eab_EventModel extends PSource_DatedVenuePremiumModel {
 	public function trash_recurring_instances () {
 		global $wpdb;
 		$ids = $this->_get_recurring_children_ids();
-		$id_str = join(',', $ids);
-		$wpdb->query("UPDATE {$wpdb->posts} SET post_status='" . self::RECURRENCE_TRASH_STATUS . "' WHERE ID IN ({$id_str})");
+		if (empty($ids)) return; // Safety check
+		$placeholders = array_fill(0, count($ids), '%d');
+		$wpdb->query($wpdb->prepare(
+			"UPDATE {$wpdb->posts} SET post_status=%s WHERE ID IN (" . implode(',', $placeholders) . ")",
+			array_merge([self::RECURRENCE_TRASH_STATUS], $ids)
+		));
 	}
 
 	public function untrash_recurring_instances () {
 		global $wpdb;
 		$ids = $this->_get_recurring_children_ids();
-		$id_str = join(',', $ids);
-		$wpdb->query("UPDATE {$wpdb->posts} SET post_status='" . self::RECURRENCE_STATUS . "' WHERE ID IN ({$id_str})");
+		if (empty($ids)) return; // Safety check
+		$placeholders = array_fill(0, count($ids), '%d');
+		$wpdb->query($wpdb->prepare(
+			"UPDATE {$wpdb->posts} SET post_status=%s WHERE ID IN (" . implode(',', $placeholders) . ")",
+			array_merge([self::RECURRENCE_STATUS], $ids)
+		));
 	}
 
 	public function delete_recurring_instances () {
 		global $wpdb;
 		$ids = $this->_get_recurring_children_ids();
-		$id_str = join(',', $ids);
-		$wpdb->query("DELETE FROM {$wpdb->posts} WHERE ID IN ({$id_str})");
-		$wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE post_id IN ({$id_str})");
+		if (empty($ids)) return; // Safety check
+		$placeholders = array_fill(0, count($ids), '%d');
+		$wpdb->query($wpdb->prepare(
+			"DELETE FROM {$wpdb->posts} WHERE ID IN (" . implode(',', $placeholders) . ")",
+			$ids
+		));
+		$wpdb->query($wpdb->prepare(
+			"DELETE FROM {$wpdb->postmeta} WHERE post_id IN (" . implode(',', $placeholders) . ")",
+			$ids
+		));
 	}
 
 	public function spawn_recurring_instances ($start, $end, $interval, $time_parts) {
@@ -953,10 +968,18 @@ class Eab_EventModel extends PSource_DatedVenuePremiumModel {
 		if (empty($children)) return false;
 
 		global $wpdb;
+		$placeholders = array_fill(0, count($children), '%d');
+		$table = Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE);
 
 		return $coming
-			? $wpdb->get_results("SELECT id FROM " . Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE) . " WHERE event_id IN(" . join(',', $children) . ") AND status != 'no' ORDER BY timestamp;")
-			: $wpdb->get_results("SELECT id FROM " . Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE) . " WHERE event_id IN(" . join(',', $children) . ") ORDER BY timestamp;")
+			? $wpdb->get_results($wpdb->prepare(
+				"SELECT id FROM {$table} WHERE event_id IN(" . implode(',', $placeholders) . ") AND status != 'no' ORDER BY timestamp",
+				$children
+			))
+			: $wpdb->get_results($wpdb->prepare(
+				"SELECT id FROM {$table} WHERE event_id IN(" . implode(',', $placeholders) . ") ORDER BY timestamp",
+				$children
+			))
 		;
 	}
 
@@ -967,41 +990,61 @@ class Eab_EventModel extends PSource_DatedVenuePremiumModel {
 	 * @return array A list of booking results.
 	 */
 	public static function get_bookings ($status=false, $since=false) {
+		global $wpdb;
+		$table = Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE);
 		$rsvps = array(
 			self::BOOKING_YES,
 			self::BOOKING_MAYBE,
 			self::BOOKING_NO,
 		);
-		$status = $status && in_array($status, $rsvps)
-			? "status='" . $status . "'"
-			: "status IN('" . join("', '", $rsvps) . "')"
-		;
 
-		$since = $since
-			? "AND timestamp > '" . date('Y-m-d H:i:s', $since) . "'"
-			: ''
-		;
-		global $wpdb;
-		return $wpdb->get_results("SELECT * FROM " . Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE) . " WHERE {$status} {$since} ORDER BY timestamp");
+		if ($status && in_array($status, $rsvps)) {
+			$status_sql = $wpdb->prepare("status = %s", $status);
+		} else {
+			$status_sql = "status IN('" . implode("', '", array_map('esc_sql', $rsvps)) . "')";
+		}
+
+		$params = array();
+		if ($since) {
+			$since_sql = "AND timestamp > %s";
+			$params[] = date('Y-m-d H:i:s', $since);
+		} else {
+			$since_sql = '';
+		}
+
+		$query = "SELECT * FROM {$table} WHERE {$status_sql} {$since_sql} ORDER BY timestamp";
+		if ( ! empty( $params ) ) {
+			return $wpdb->get_results( $wpdb->prepare( $query, $params ) );
+		}
+		return $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- no user input
 	}
 
 	public function get_event_bookings ($status=false, $since=false) {
+		global $wpdb;
+		$table = Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE);
 		$rsvps = array(
 			self::BOOKING_YES,
 			self::BOOKING_MAYBE,
 			self::BOOKING_NO,
 		);
-		$status = $status && in_array($status, $rsvps)
-			? "status='" . $status . "'"
-			: "status IN('" . join("', '", $rsvps) . "')"
-		;
 
-		$since = $since
-			? "AND timestamp > '" . date('Y-m-d H:i:s', $since) . "'"
-			: ''
-		;
-		global $wpdb;
-		return $wpdb->get_results($wpdb->prepare("SELECT * FROM " . Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE) . " WHERE {$status} {$since} AND event_id = %d ORDER BY timestamp", $this->get_id()));
+		if ($status && in_array($status, $rsvps)) {
+			$status_sql = $wpdb->prepare("status = %s", $status);
+		} else {
+			$status_sql = "status IN('" . implode("', '", array_map('esc_sql', $rsvps)) . "')";
+		}
+
+		$params = array();
+		if ($since) {
+			$since_sql = "AND timestamp > %s";
+			$params[] = date('Y-m-d H:i:s', $since);
+		} else {
+			$since_sql = '';
+		}
+		$params[] = $this->get_id();
+
+		$query = "SELECT * FROM {$table} WHERE {$status_sql} {$since_sql} AND event_id = %d ORDER BY timestamp";
+		return $wpdb->get_results( $wpdb->prepare( $query, $params ) );
 	}
 
 	public function get_rsvps () {

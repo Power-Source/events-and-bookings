@@ -6,9 +6,10 @@ Description: PS Events bietet Dir ein flexibles System zur Organisation von Part
 Author: PSOURCE
 Text Domain: eab
 Domain Path: languages
-Version: 1.0.0
-Requires at least: 4.6
-Tested up to: 5.7
+Version: 1.0.1
+Requires at least: 5.6
+Requires PHP: 7.4
+Tested up to: 6.6
 Author URI: https://github.com/Power-Source
 */
 
@@ -240,9 +241,10 @@ class Eab_EventsHub {
 		wp_register_style( 'eab_front', EAB_PLUGIN_URL . 'css/front.css', null, self::CURRENT_VERSION );
 	
 		if ( isset( $_REQUEST['eab_step'] ) ) {
-			setcookie( 'eab_step', $_REQUEST['eab_step'], eab_current_time() + ( 3600 * 24 ) );
+			$eab_step = sanitize_text_field( wp_unslash( $_REQUEST['eab_step'] ) );
+			setcookie( 'eab_step', $eab_step, eab_current_time() + ( 3600 * 24 ), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
 		} else if ( isset( $_COOKIE['eab_step'] ) ) {
-			$_REQUEST['eab_step'] = $_COOKIE['eab_step'];
+			$_REQUEST['eab_step'] = sanitize_text_field( wp_unslash( $_COOKIE['eab_step'] ) );
 		}
 	
 		if ( isset( $_REQUEST['eab_export'] ) ) {
@@ -256,9 +258,35 @@ class Eab_EventsHub {
 	function process_rsvps () {
 		global $wpdb;
 		if ( isset( $_POST['event_id'] ) && isset( $_POST['user_id'] ) ) {
+			// Security: Verify nonce
+			if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'event_rsvp_nonce')) {
+				wp_nonce_ays('event_rsvp');
+			}
+			
+			// Security: User must be logged in
+			if (!is_user_logged_in()) {
+				wp_safe_remote_post(add_query_arg('eab', 'y'));
+				return;
+			}
+			
 		    $booking_actions 	= array( 'yes' => 'yes', 'maybe' => 'maybe', 'no' => 'no' );
 			$booking_action 	= '';
 		    $event_id 			= intval( $_POST['event_id'] );
+			$user_id_input		= intval( $_POST['user_id'] );
+			$current_user_id	= get_current_user_id();
+			
+			// Security: IDOR Prevention - Users can only RSVP for themselves unless they can edit the event
+			$post = get_post($event_id);
+			if (!$post || $post->post_type !== 'psource_event') {
+				wp_nonce_ays('event_rsvp');
+			}
+			
+			// Allow event editors or admins to RSVP for others
+			// Regular users can only RSVP for themselves
+			if ($user_id_input !== $current_user_id && !current_user_can('edit_post', $event_id)) {
+				wp_send_json_error('You can only RSVP as yourself');
+			}
+			
 			foreach( $booking_actions as $val ) {
 				if( isset( $_POST['action_' . $val] ) ) {
 					$booking_action = $val;
@@ -266,7 +294,7 @@ class Eab_EventsHub {
 				}
 			}
 
-			$user_id = apply_filters( 'eab-rsvp-user_id', get_current_user_id(), $_POST['user_id'] );
+			$user_id = apply_filters( 'eab-rsvp-user_id', $current_user_id, $user_id_input );
 
 		    do_action( 'psource_event_booking', $event_id, $user_id, $booking_action );
 		    if ( isset( $_POST['action_yes'] ) ) {
@@ -1072,8 +1100,8 @@ class Eab_EventsHub {
 
     function bookings_meta_box () {
 		global $post;
-		echo '<a class="button" href="' . admin_url( 'index.php?eab_export=attendees&event_id='. $post->ID ) . '" class="eab-export_attendees">' .
-			__( 'Exportieren', self::TEXT_DOMAIN ) . '</a>';
+		echo '<a class="button eab-export_attendees" href="' . esc_url( admin_url( 'index.php?eab_export=attendees&event_id=' . intval( $post->ID ) ) ) . '">' .
+			esc_html__( 'Exportieren', self::TEXT_DOMAIN ) . '</a>';
 		echo $this->meta_box_part_bookings( $post );
 	}
 
@@ -1123,6 +1151,18 @@ class Eab_EventsHub {
 			return;
 		}
 
+		// Security: Verify nonce for event-specific meta boxes
+		if ( isset( $_POST['psource_event_where_meta'] ) || isset( $_POST['psource_event_when_meta'] ) || isset( $_POST['psource_event_status_meta'] ) ) {
+			if ( !isset( $_POST['_wpnonce'] ) || !wp_verify_nonce( $_POST['_wpnonce'], 'update-post_' . $post_id ) ) {
+				return;
+			}
+		}
+
+		// Security: Current user must be able to edit this post
+		if ( !current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
 		$is_valid_post_type = ( Eab_EventModel::POST_TYPE == $post->post_type );
 
 		if ( $is_valid_post_type ) {
@@ -1133,7 +1173,7 @@ class Eab_EventsHub {
 		if ( $is_valid_post_type && isset( $_POST['psource_event_where_meta'] ) ) {
 		    $meta = get_post_custom( $post_id );
 
-		    update_post_meta( $post_id, 'psource_event_venue', strip_tags( $_POST['psource_event_venue'] ) );
+		    update_post_meta( $post_id, 'psource_event_venue', sanitize_text_field( wp_unslash( $_POST['psource_event_venue'] ) ) );
 
 		    //for any other plugin to hook into
 		    do_action( 'psource_event_save_where_meta', $post_id, $meta );
@@ -1143,7 +1183,7 @@ class Eab_EventsHub {
 		if ( $is_valid_post_type && isset( $_POST['psource_event_status_meta'] ) ) {
 		    $meta = get_post_custom( $post_id );
 
-		    update_post_meta( $post_id, 'psource_event_status', strip_tags( $_POST['psource_event_status'] ) );
+		    update_post_meta( $post_id, 'psource_event_status', sanitize_text_field( wp_unslash( $_POST['psource_event_status'] ) ) );
 
 		    //for any other plugin to hook into
 		    do_action( 'psource_event_save_status_meta', $post_id, $meta );
@@ -1154,7 +1194,7 @@ class Eab_EventsHub {
 		    $meta 		= get_post_custom( $post_id );
 
 			$is_paid 	= (int)$_POST['psource_event_paid'];
-			$fee 		= $is_paid ? strip_tags( $_POST['psource_event_fee'] ) : '';
+			$fee 		= $is_paid ? sanitize_text_field( wp_unslash( $_POST['psource_event_fee'] ) ) : '';
 
 		    update_post_meta( $post_id, 'psource_event_paid', ( $is_paid ? '1' : '' ) );
 		    update_post_meta( $post_id, 'psource_event_fee', $fee );
@@ -1165,20 +1205,20 @@ class Eab_EventsHub {
 
 		// Setting up recurring event
 		if ( $is_valid_post_type && isset( $_POST['eab_repeat'] ) ) {
-			$repeat = $_POST['eab_repeat'];
-			$start 	= $repeat['repeat_start'] ? strtotime( $repeat['repeat_start'] ) : eab_current_time();
-			$end 	= $repeat['repeat_end'] ? strtotime( $repeat['repeat_end'] ) : eab_current_time();
+			$repeat = array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['eab_repeat'] ) );
+			$start 	= !empty( $repeat['repeat_start'] ) ? strtotime( $repeat['repeat_start'] ) : eab_current_time();
+			$end 	= !empty( $repeat['repeat_end'] ) ? strtotime( $repeat['repeat_end'] ) : eab_current_time();
 			if ( $end <= $start ) {
 				// BAH! Wrong order
 			}
-			$interval 	= $repeat['repeat_every'];
+			$interval 	= sanitize_text_field( $repeat['repeat_every'] );
 			$time_parts = array(
-				'month' 	=> @$repeat['month'],
-				'day' 		=> @$repeat['day'],
-				'weekday' 	=> @$repeat['weekday'],
-				'week' 		=> @$repeat['week'],
-				'time' 		=> @$repeat['time'],
-				'duration' 	=> @$repeat['duration'],
+				'month' 	=> isset( $repeat['month'] ) ? sanitize_text_field( $repeat['month'] ) : '',
+				'day' 		=> isset( $repeat['day'] ) ? sanitize_text_field( $repeat['day'] ) : '',
+				'weekday' 	=> isset( $repeat['weekday'] ) ? sanitize_text_field( $repeat['weekday'] ) : '',
+				'week' 		=> isset( $repeat['week'] ) ? sanitize_text_field( $repeat['week'] ) : '',
+				'time' 		=> isset( $repeat['time'] ) ? sanitize_text_field( $repeat['time'] ) : '',
+				'duration' 	=> isset( $repeat['duration'] ) ? sanitize_text_field( $repeat['duration'] ) : '',
 			);
 			$event = new Eab_EventModel( $post );
 			$event->spawn_recurring_instances( $start, $end, $interval, $time_parts ); //@TODO: Improve
@@ -1192,33 +1232,39 @@ class Eab_EventsHub {
 			delete_post_meta( $post_id, 'psource_event_end' );
 			delete_post_meta( $post_id, 'psource_event_no_end' );
 		   	if ( isset( $_POST['psource_event_start'] ) && count( $_POST['psource_event_start'] ) > 0 ) {
-				foreach ( $_POST['psource_event_start'] as $i => $event_start ) {
-					if ( empty( $_POST['psource_event_start'][$i] ) || empty( $_POST['psource_event_end'][$i] ) ) {
+				$event_starts     = array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['psource_event_start'] ) );
+				$event_ends       = array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['psource_event_end'] ) );
+				$event_start_times = array_map( 'sanitize_text_field', wp_unslash( (array) isset( $_POST['psource_event_start_time'] ) ? $_POST['psource_event_start_time'] : array() ) );
+				$event_end_times  = array_map( 'sanitize_text_field', wp_unslash( (array) isset( $_POST['psource_event_end_time'] ) ? $_POST['psource_event_end_time'] : array() ) );
+				$no_start_times   = isset( $_POST['psource_event_no_start_time'] ) ? array_map( 'absint', (array) $_POST['psource_event_no_start_time'] ) : array();
+				$no_end_times     = isset( $_POST['psource_event_no_end_time'] ) ? array_map( 'absint', (array) $_POST['psource_event_no_end_time'] ) : array();
+				foreach ( $event_starts as $i => $event_start ) {
+					if ( empty( $event_starts[$i] ) || empty( $event_ends[$i] ) ) {
 						continue;
 					}
-					if ( !empty ( $_POST['psource_event_start'][$i] ) ) {
+					if ( !empty( $event_starts[$i] ) ) {
 
-						if ( $_POST['psource_event_start_time'][$i] != '' && strpos( ':', $_POST['psource_event_start_time'][$i] ) === false ){
-							$_POST['psource_event_start_time'][$i] = $_POST['psource_event_start_time'][$i] . ':00';
+						if ( !empty( $event_start_times[$i] ) && strpos( ':', $event_start_times[$i] ) === false ){
+							$event_start_times[$i] = $event_start_times[$i] . ':00';
 						}
 
-						$start_time = @$_POST['psource_event_no_start_time'][$i] ? '00:01' : @$_POST['psource_event_start_time'][$i];
-						add_post_meta( $post_id, 'psource_event_start', date('Y-m-d H:i:s', strtotime( "{$_POST['psource_event_start'][$i]} {$start_time}" ) ) );
-						if ( @$_POST['psource_event_no_start_time'][$i] ) {
+						$start_time = !empty( $no_start_times[$i] ) ? '00:01' : ( isset( $event_start_times[$i] ) ? $event_start_times[$i] : '' );
+						add_post_meta( $post_id, 'psource_event_start', date('Y-m-d H:i:s', strtotime( "{$event_starts[$i]} {$start_time}" ) ) );
+						if ( !empty( $no_start_times[$i] ) ) {
 							add_post_meta($post_id, 'psource_event_no_start', 1 );
 						} else {
 							add_post_meta($post_id, 'psource_event_no_start', 0 );
 						}
 					}
-					if ( !empty($_POST['psource_event_end'][$i] ) ) {
+					if ( !empty( $event_ends[$i] ) ) {
 
-						if( $_POST['psource_event_end_time'][$i] != '' && strpos( ':', $_POST['psource_event_end_time'][$i] ) === false ){
-							$_POST['psource_event_end_time'][$i] = $_POST['psource_event_end_time'][$i] . ':00';
+						if( !empty( $event_end_times[$i] ) && strpos( ':', $event_end_times[$i] ) === false ){
+							$event_end_times[$i] = $event_end_times[$i] . ':00';
 						}
 
-						$end_time = @$_POST['psource_event_no_end_time'][$i] ? '23:59' : @$_POST['psource_event_end_time'][$i];
-						add_post_meta( $post_id, 'psource_event_end', date( 'Y-m-d H:i:s', strtotime( "{$_POST['psource_event_end'][$i]} {$end_time}" ) ) );
-						if ( @$_POST['psource_event_no_end_time'][$i] ) {
+						$end_time = !empty( $no_end_times[$i] ) ? '23:59' : ( isset( $event_end_times[$i] ) ? $event_end_times[$i] : '' );
+						add_post_meta( $post_id, 'psource_event_end', date( 'Y-m-d H:i:s', strtotime( "{$event_ends[$i]} {$end_time}" ) ) );
+						if ( !empty( $no_end_times[$i] ) ) {
 							add_post_meta( $post_id, 'psource_event_no_end', 1 );
 						} else {
 							add_post_meta( $post_id, 'psource_event_no_end', 0 );
