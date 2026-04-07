@@ -682,6 +682,7 @@ class Eab_MP_Bridge {
 	 */
 	private function _is_product_id ($cart_id) {
 		$post = get_post($cart_id);
+		if (!($post instanceof WP_Post)) return false;
 		return MP_Product::get_post_type() === $post->post_type;
 	}
 

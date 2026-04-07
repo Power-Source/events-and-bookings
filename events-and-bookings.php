@@ -1,16 +1,16 @@
 <?php
 /*
 Plugin Name: PS Events
-Plugin URI: https://power-source.github.io/events-and-bookings/
+Plugin URI: https://psource.eimen.net/wiki/ps-events-dokumentation/
 Description: PS Events bietet Dir ein flexibles System zur Organisation von Partys, Abendessen, Spendenaktionen – was auch immer Du Dir vorstellen kannst.
 Author: PSOURCE
 Text Domain: eab
 Domain Path: languages
-Version: 1.0.1
+Version: 1.0.2
 Requires at least: 5.6
 Requires PHP: 7.4
 Tested up to: 6.6
-Author URI: https://github.com/Power-Source
+Author URI: https://psource.eimen.net
 */
 
 /**
@@ -28,7 +28,7 @@ class Eab_EventsHub {
 	 * @TODO Update version number for new releases
      * @var	string
      */
-    const CURRENT_VERSION 		= '1.0.1';
+    const CURRENT_VERSION 		= '1.0.2';
 
     /**
      * Translation domain

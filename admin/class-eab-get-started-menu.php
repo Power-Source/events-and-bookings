@@ -61,9 +61,10 @@ class Eab_Admin_Get_Started_Menu {
 						<h3 class="eab-hndle"><?php _e('Brauchst Du Hilfe?', eab_domain() ); ?></h3>
 						<div class="eab-inside">
 							<ol>
-								<li><a href="https://n3rds.work/piestingtal_source/ps-events-eventmanagement-fuer-wordpress/"><?php _e('Projektseite auf Webmasterservice N3rds@Work', eab_domain() ); ?></a></li>
-								<li><a href="https://n3rds.work/forums/forum/psource-support-foren/ps-forum-supportforum/"><?php _e('Stelle eine Frage zu diesem Plugin in unseren Support-Foren', eab_domain() ); ?></a></li>
-								<li><a href="https://github.com/piestingtal-source/ps-events"><?php _e('GitHub Repo', eab_domain() ); ?></a></li>
+								<li><a href="https://psource.eimen.net/wiki/ps-events-dokumentation/"><?php _e('Zur Dokumentation', eab_domain() ); ?></a></li>
+								<li><a href="https://psource.eimen.net/psource-support-forum/"><?php _e('Finde Hilfe im Support-Forum', eab_domain() ); ?></a></li>
+								<li><a href="https://psource.eimen.net/events-and-bookings"><?php _e('GitHub Repo', eab_domain() ); ?></a></li>
+								<li><a href="https://psource.eimen.net/psource-manager/"><?php _e('Halte PS Events aktuell und finde noch mehr PSOURCE für Dein Projekt', eab_domain() ); ?></a></li>
 							</ol>
 						</div>
 					</div>

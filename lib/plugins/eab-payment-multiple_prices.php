@@ -173,8 +173,8 @@ EOJs;
 			)
 		;
 		
-		$content .= '<input type="image" name="submit" border="0" src="https://www.paypal.com/en_US/i/btn/btn_paynow_SM.gif" alt="PayPal - Die sicherere und einfachere Möglichkeit, online zu bezahlen" />';
-		$content .= '<img alt="" border="0" width="1" height="1" src="https://www.paypal.com/en_US/i/scr/pixel.gif" />';
+		$content .= '<input type="image" name="submit" style="border:0" src="https://www.paypal.com/en_US/i/btn/btn_paynow_SM.gif" alt="PayPal - Die sicherere und einfachere Möglichkeit, online zu bezahlen" />';
+		$content .= '<img alt="" style="border:0" width="1" height="1" src="https://www.paypal.com/en_US/i/scr/pixel.gif" />';
 		$content .= '</form>';
 		return $content;
 	}

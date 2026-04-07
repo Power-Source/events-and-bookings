@@ -76,6 +76,13 @@ Begeistere die Teilnehmer für Deine Veranstaltung. Verbreite das Wort mit autom
 
 == ChangeLog ==
 
+= 1.0.2 =
+
+* Fix: PHP 8 Warning "Attempt to read property post_type on null" in agm_google_maps_post_meta_address und weiteren Hooks behoben
+* Compat: Alle direkten $post->post_type Zugriffe mit instanceof WP_Post Guard abgesichert (archive_content, single_content, save_event_meta, respawn_recurring_instances, manage_post_actions, handle_post_updated_messages, post_type_link)
+* Compat: Gleiche Guards in lib/default_filters.php, lib/widgets/Attendees_Widget.class.php und lib/plugins/lib/class_eab_mp_bridge.php
+* HTML5: Veraltete border="0" Attribute in PayPal-Formular-Markup durch style="border:0" ersetzt (class_eab_template.php, eab-payment-multiple_prices.php)
+
 = 1.0.1 =
 
 * Security: Escaping, Input-Sanitization und Nonce/Capability-Checks verbessert
