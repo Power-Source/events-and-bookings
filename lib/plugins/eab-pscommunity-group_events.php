@@ -1,20 +1,20 @@
 <?php
 /*
-Plugin Name: BuddyPress: Gruppenereignisse
-Description: Ermöglicht es PS-Event mit Deinen BuddyPress-Gruppen zu verbinden.
+Plugin Name: PS Community: Gruppenereignisse
+Description: Verbindet PS Events mit Deinen PS Community Gruppen.
 Plugin URI: https://n3rds.work/piestingtal-source-project/eventsps-das-eventmanagment-fuer-wordpress/
 Version: 1.2
-AddonType: BuddyPress
+AddonType: PS Community
 Author: DerN3rd
 */
 
 /*
-Detail: Ermöglicht eine tiefere Integration Deiner Events in BuddyPress-Gruppen. <br/> <b>Erfordert die BuddyPress Groups-Komponente</b>
+Detail: Ermöglicht eine tiefere Integration Deiner Events in PS Community Gruppen.
 */ 
 
 if( ! defined( 'EAB_SHOW_HIDDEN_GROUP' ) ) define( 'EAB_SHOW_HIDDEN_GROUP', false );
 
-class Eab_BuddyPress_GroupEvents {
+class Eab_PSCommunity_GroupEvents {
 	
 	const SLUG = 'group-events';
 	private $_data;
@@ -24,7 +24,7 @@ class Eab_BuddyPress_GroupEvents {
 	}
 	
 	public static function serve () {
-		$me = new Eab_BuddyPress_GroupEvents;
+		$me = new Eab_PSCommunity_GroupEvents;
 		$me->_add_hooks();
 	}
 	
@@ -37,11 +37,10 @@ class Eab_BuddyPress_GroupEvents {
 			add_action('psource_event_booking_yes', array($this, 'auto_join_group'), 10, 2);
 			add_action('psource_event_booking_maybe', array($this, 'auto_join_group'), 10, 2);
 		}
-		if ($this->_data->get_option('bp-group_event-private_events')) {
+		if ($this->_data->get_option('bp-group_event-private_events') || function_exists('cpc_is_group_member')) {
 			add_filter('psource-query', array($this, 'filter_query'));
 		}
 
-		add_action('bp_init', array($this, 'add_tab'));
 		add_filter('eab-event_meta-event_meta_box-after', array($this, 'add_meta_box'));
 		add_action('eab-event_meta-save_meta', array($this, 'save_meta'));
 		add_action('eab-events-recurrent_event_child-save_meta', array($this, 'save_meta'));
@@ -83,7 +82,7 @@ class Eab_BuddyPress_GroupEvents {
 		name="<?php echo $widget->get_field_name('show_bp_group'); ?>" 
 		value="1" <?php echo ($options['show_bp_group'] ? 'checked="checked"' : ''); ?> 
 	/>
-	<?php _e('BuddyPress-Gruppe anzeigen', 'eab'); ?>
+	<?php _e('PS Community Gruppe anzeigen', 'eab'); ?>
 </label>
 		<?php
 	}
@@ -100,13 +99,12 @@ class Eab_BuddyPress_GroupEvents {
 		global $current_user;
 		if (!($query instanceof WP_Query)) return $query;
 		if (Eab_EventModel::POST_TYPE != @$query->query_vars['post_type']) return $query;
-		if (!function_exists('groups_is_user_member')) return $query;
 		
 		$posts = array();
 		foreach ($query->posts as $post) {
 			$group = (int)get_post_meta($post->ID, 'eab_event-bp-group_event', true);
 			if ($group) {
-				if (!groups_is_user_member($current_user->ID, $group)) continue; 
+				if (!$this->can_user_view_group_event($group, (int)$current_user->ID)) continue;
 			}
 			$posts[] = $post;
 		}
@@ -114,25 +112,75 @@ class Eab_BuddyPress_GroupEvents {
 		$query->post_count = count($posts);
 		return $query;
 	}
+
+	private function can_user_view_group_event ($group_id, $user_id = 0) {
+		$group_id = (int)$group_id;
+		$user_id = (int)$user_id;
+
+		if ($group_id <= 0) return true;
+		if (!$user_id) $user_id = get_current_user_id();
+
+		$group = get_post($group_id);
+		if ($group && $group->post_type === 'cpc_group' && function_exists('cpc_is_group_member')) {
+			if (current_user_can('manage_options')) return true;
+
+			$type = get_post_meta($group_id, 'cpc_group_type', true);
+			if (!$type) $type = 'public';
+			if ($type === 'public') return true;
+			if (!$user_id) return false;
+
+			if (cpc_is_group_member($user_id, $group_id, get_current_blog_id())) return true;
+
+			if (function_exists('cpc_get_group_member_role')) {
+				$role = cpc_get_group_member_role($user_id, $group_id, get_current_blog_id());
+				if (in_array($role, array('admin', 'moderator'), true)) return true;
+			}
+
+			return false;
+		}
+
+		return false;
+	}
+
+	private function get_psc_groups ($user_id = 0) {
+		if (!function_exists('cpc_get_user_groups') || !function_exists('cpc_get_groups_by_type')) {
+			return array();
+		}
+
+		$groups = array();
+		if ($this->_data->get_option('bp-group_event-user_groups_only')) {
+			$allow_all_for_admin = is_super_admin() && $this->_data->get_option('bp-group_event-user_groups_only-unless_superadmin');
+			if (!$allow_all_for_admin) {
+				$groups = cpc_get_user_groups((int)$user_id, 'active', get_current_blog_id());
+			}
+		}
+
+		if (empty($groups)) {
+			$groups = cpc_get_groups_by_type('all', -1, get_current_blog_id());
+		}
+
+		return is_array($groups) ? $groups : array();
+	}
 	
 	function auto_join_group ($event_id, $user_id) {
-		if (!function_exists('groups_get_groups')) return false;
+		if (!function_exists('cpc_add_group_member') || !function_exists('cpc_is_group_member')) return false;
 		if (!$this->_data->get_option('bp-group_event-auto_join_groups')) return false;
 		$group_id = (int)get_post_meta($event_id, 'eab_event-bp-group_event', true);
 		if (!$group_id) return false;
-
-		groups_accept_invite($user_id, $group_id);
+		if (!cpc_is_group_member((int)$user_id, $group_id, get_current_blog_id())) {
+			cpc_add_group_member((int)$user_id, $group_id, 'member', 'active', get_current_blog_id());
+		}
 	}
 	
 	function show_nags () {
-		if (!defined('BP_VERSION')) {
+		if (!function_exists('cpc_is_group_member')) {
 			echo '<div class="error"><p>' .
-				__("BuddyPress muss installiert und aktiviert sein, damit die Gruppenereignis-Erweiterung funktioniert", 'eab') .
+				__("PS Community Groups muss aktiv sein, damit die Gruppenereignis-Erweiterung funktioniert", 'eab') .
 			'</p></div>';
 		}
-		if (!function_exists('groups_get_groups')) {
+		if (!function_exists('cpc_get_user_groups')) {
 			echo '<div class="error"><p>' .
-				__("BuddyPress Groups-Komponente aktivieren, damit die Erweiterung für Gruppenereignisse funktioniert", 'eab') .
+				__("PS Community Groups Funktionen fehlen. Bitte PS Community Groups aktivieren.", 'eab') .
 			'</p></div>';
 		}
 	}
@@ -188,19 +236,9 @@ class Eab_BuddyPress_GroupEvents {
 
 	function add_meta_box ($box) {
 		global $post, $current_user;
-		if (!function_exists('groups_get_groups')) return $box;
+		if (!function_exists('cpc_get_user_groups')) return $box;
 		$group_id = get_post_meta($post->ID, 'eab_event-bp-group_event', true);
-		
-		$group_count = defined('EAB_BP_GROUPS_LIST_GROUP_LIMIT') && intval(EAB_BP_GROUPS_LIST_GROUP_LIMIT)
-			? EAB_BP_GROUPS_LIST_GROUP_LIMIT
-			: groups_get_total_group_count()
-		;
-		$group_params = array('per_page' => $group_count , 'type' => 'alphabetical', 'show_hidden' => EAB_SHOW_HIDDEN_GROUP );
-		if ($this->_data->get_option('bp-group_event-user_groups_only')) {
-			if (!(is_super_admin() && $this->_data->get_option('bp-group_event-user_groups_only-unless_superadmin'))) $group_params['user_id'] = $current_user->ID;
-		}
-		$groups = groups_get_groups($group_params);
-		$groups = @$groups['groups'] ? $groups['groups'] : array();
+		$groups = $this->get_psc_groups((int)$current_user->ID);
 		
 		$ret = '';
 		$ret .= '<div class="eab_meta_box">';
@@ -213,8 +251,11 @@ class Eab_BuddyPress_GroupEvents {
 		$ret .= ' <select name="eab_event-bp-group_event" id="eab_event-bp-group_event">';
 		$ret .= '<option value="">' . __('Keine Gruppenveranstaltung', 'eab') . '&nbsp;</option>';
 		foreach ($groups as $group) {
-			$selected = ($group->id == $group_id) ? 'selected="selected"' : '';
-			$ret .= "<option value='{$group->id}' {$selected}>{$group->name}</option>";
+			$gid = isset($group->ID) ? (int)$group->ID : 0;
+			$gtitle = isset($group->post_title) ? $group->post_title : '';
+			if (!$gid || !$gtitle) continue;
+			$selected = ($gid == $group_id) ? 'selected="selected"' : '';
+			$ret .= "<option value='{$gid}' {$selected}>" . esc_html($gtitle) . "</option>";
 		}
 		$ret .= '</select> ';
 		
@@ -225,27 +266,20 @@ class Eab_BuddyPress_GroupEvents {
 
 	function add_fpe_meta_box ($box, $event) {
 		global $current_user;
-		if (!function_exists('groups_get_groups')) return $box;
+		if (!function_exists('cpc_get_user_groups')) return $box;
 		$group_id = get_post_meta($event->get_id(), 'eab_event-bp-group_event', true);
-		
-		$group_count = defined('EAB_BP_GROUPS_LIST_GROUP_LIMIT') && intval(EAB_BP_GROUPS_LIST_GROUP_LIMIT)
-			? EAB_BP_GROUPS_LIST_GROUP_LIMIT
-			: groups_get_total_group_count()
-		;
-		$group_params = array('per_page' => $group_count , 'type' => 'alphabetical', 'show_hidden' => EAB_SHOW_HIDDEN_GROUP);
-		if ($this->_data->get_option('bp-group_event-user_groups_only')) {
-			if (!(is_super_admin() && $this->_data->get_option('bp-group_event-user_groups_only-unless_superadmin'))) $group_params['user_id'] = $current_user->ID;
-		}
-		$groups = groups_get_groups($group_params);
-		$groups = @$groups['groups'] ? $groups['groups'] : array();
+		$groups = $this->get_psc_groups((int)$current_user->ID);
 		
 		$ret .= '<div class="eab-events-fpe-meta_box">';
 		$ret .= __('Dies ist eine Gruppenveranstaltung für', 'eab');
 		$ret .= ' <select name="eab_event-bp-group_event" id="eab_event-bp-group_event">';
 		$ret .= '<option value="">' . __('Kein Gruppenereignis', 'eab') . '&nbsp;</option>';
 		foreach ($groups as $group) {
-			$selected = ($group->id == $group_id) ? 'selected="selected"' : '';
-			$ret .= "<option value='{$group->id}' {$selected}>{$group->name}</option>";
+			$gid = isset($group->ID) ? (int)$group->ID : 0;
+			$gtitle = isset($group->post_title) ? $group->post_title : '';
+			if (!$gid || !$gtitle) continue;
+			$selected = ($gid == $group_id) ? 'selected="selected"' : '';
+			$ret .= "<option value='{$gid}' {$selected}>" . esc_html($gtitle) . "</option>";
 		}
 		$ret .= '</select> ';
 		$ret .= '</div>';
@@ -254,7 +288,7 @@ class Eab_BuddyPress_GroupEvents {
 	}
 	
 	private function _save_meta ($post_id, $request) {
-		if (!function_exists('groups_get_groups')) return false;
+		if (!function_exists('cpc_get_group_members')) return false;
 		if (!isset($request['eab_event-bp-group_event'])) return false;
 		
 		$data = (int)$request['eab_event-bp-group_event'];
@@ -264,9 +298,9 @@ class Eab_BuddyPress_GroupEvents {
 		
 		$email_grp_member = $this->_data->get_option('eab_event_bp_group_event_email_grp_member');
 		if( isset( $email_grp_member ) &&  $email_grp_member == 1 ) {
-			$grp_members = groups_get_group_members( array( 'group_id' => $data, 'exclude_admins_mods' => false ) );
-			foreach( $grp_members['members'] as $member ){
-				//echo $member->user_email;
+			$grp_members = cpc_get_group_members((int)$data, 'active', '', get_current_blog_id());
+			foreach( $grp_members as $member ){
+				if (empty($member->user_email)) continue;
 				$subject = __( 'Informationen zu einem Gruppenereignis', 'eab' );
 				$subject = apply_filters( 'eab_bp_grp_events_member_mail_subject', $subject, $member, $post_id );
 				$message = __( 'Hallo ' . $member->display_name . ',<br><br>Eine Veranstaltung wurde erstellt. Ich hoffe, Du wirst an dieser Veranstaltung teilnehmen. Details zur Veranstaltung findest Du hier: ' . get_permalink( $post_id ), 'eab' );
@@ -285,95 +319,14 @@ class Eab_BuddyPress_GroupEvents {
 		$this->_save_meta($post_id, $request);
 	}
 	
-	function add_tab () {
-		global $bp, $current_user;
-		if (!function_exists('groups_get_groups')) return false;
-		if (!$bp->is_single_item) return false;
-
-		// Don't show groups tab for non-members if Events are private to groups
-		if ($this->_data->get_option('bp-group_event-private_events')) {
-			if (!groups_is_user_member($current_user->ID, $bp->groups->current_group->id)) return false; 
-		}
-		
-		$name = __('Gruppenereignisse', 'eab');
-		$groups_link = bp_get_group_permalink($bp->groups->current_group);//$bp->root_domain . '/' . $bp->groups->slug . '/' . $bp->groups->current_group->slug . '/';
-		
-		bp_core_new_subnav_item(array(
-			'name' => $name,
-			'slug' => self::SLUG,
-			'parent_url' => $groups_link,
-			'parent_slug' => $bp->groups->current_group->slug,
-			'screen_function' => array($this, 'bind_bp_groups_page'),
-		));
-	}
-	
-	function bind_bp_groups_page () {
-		add_action('bp_template_content', array($this, 'show_group_events_profile_body'));
-		add_action('bp_head', array($this, 'enqueue_dependencies'));
-		bp_core_load_template(apply_filters('bp_core_template_plugin', 'groups/single/plugins'));
-	}
-	
-	function enqueue_dependencies () {
-		// @TODO: refactor to separate style.
-		wp_enqueue_style('eab-bp-group_events', plugins_url(basename(EAB_PLUGIN_DIR) . "/default-templates/calendar/events.min.css"));
-	}
-	
 	function enqueue_fpe_dependencies () {
 		wp_enqueue_script('eab-buddypress-group_events-fpe', plugins_url(basename(EAB_PLUGIN_DIR) . "/js/eab-buddypress-group_events-fpe.js"), array('jquery'));
 	}
-
-	function show_group_events_profile_body () {
-		global $bp;
-		$timestamp = $this->_get_requested_timestamp();
-		
-		$collection = new Eab_BuddyPress_GroupEventsCollection($bp->groups->current_group->id, $timestamp);
-		$events = $collection->to_collection();
-		if (!class_exists('Eab_CalendarTable_EventArchiveCalendar')) require_once EAB_PLUGIN_DIR . 'lib/class_eab_calendar_helper.php';
-		$renderer = new Eab_CalendarTable_EventArchiveCalendar($events);
-		
-		do_action('eab-buddypress-group_events-before_events');
-		echo '<h3>' . date_i18n('F Y', $timestamp) . '</h3>'; 
-		do_action('eab-buddypress-group_events-after_head');
-		echo $this->_get_navigation($timestamp);
-		echo $renderer->get_month_calendar($timestamp);
-		echo $this->_get_navigation($timestamp);
-		do_action('eab-buddypress-group_events-after_events');
-	}
-
-	private function _get_navigation ($timestamp) {
-		global $bp;
-		$root = $bp->root_domain . '/' . $bp->pages->groups->slug . '/' . $bp->groups->current_group->slug . '/';
-		
-		$prev_url = $root . self::SLUG . date_i18n('/Y/m/', $timestamp - (28*86400));
-		$next_url = $root . self::SLUG . date_i18n('/Y/m/', $timestamp + (32*86400));
-		
-		return '<div class="eab-bp-group_events-navigation">' .
-			'<div class="eab-bp-group_events-navigation-prev" style="float:left">' .
-				"<a href='{$prev_url}'>" . __('Zurück', 'eab') . '</a>' .
-			'</div>' .
-			'<div class="eab-bp-group_events-navigation-next" style="float:right">' .
-				"<a href='{$next_url}'>" . __('Weiter', 'eab') . '</a>' .
-			'</div>' .
-		'</div>';
-	}
-	
-	private function _get_requested_timestamp () {
-		global $bp;
-		if (!$bp->action_variables) return eab_current_time();
-		
-		$year = (int)(isset($bp->action_variables[0]) ? $bp->action_variables[0] : date('Y'));
-		$year = $year ? $year : date('Y');
-
-		$month = (int)(isset($bp->action_variables[1]) ? $bp->action_variables[1] : date('m'));
-		$month = $month ? $month : date('m');
-		
-		return strtotime("{$year}-{$month}-01");
-	}
 }
 
 
 
-class Eab_BuddyPress_GroupEventsCollection extends Eab_UpcomingCollection {
+class Eab_PSCommunity_GroupEventsCollection extends Eab_UpcomingCollection {
 	
 	private $_group_id;
 		
@@ -391,7 +344,7 @@ class Eab_BuddyPress_GroupEventsCollection extends Eab_UpcomingCollection {
 		return $args;
 	}
 }
-class Eab_BuddyPress_GroupEventsWeeksCollection extends Eab_UpcomingWeeksCollection {
+class Eab_PSCommunity_GroupEventsWeeksCollection extends Eab_UpcomingWeeksCollection {
 	
 	private $_group_id;
 		
@@ -410,7 +363,7 @@ class Eab_BuddyPress_GroupEventsWeeksCollection extends Eab_UpcomingWeeksCollect
 	}
 }
 
-Eab_BuddyPress_GroupEvents::serve();
+Eab_PSCommunity_GroupEvents::serve();
 
 
 /**
@@ -428,16 +381,16 @@ class Eab_GroupEvents_Template extends Eab_Template {
 		$group_id = get_post_meta($event_id, 'eab_event-bp-group_event', true);
 		if (!$group_id) return false;
 		
-		$group = groups_get_group(array('group_id' => $group_id));
-		if (!$group) return false;
+		$group = get_post($group_id);
+		if (!$group || $group->post_type !== 'cpc_group') return false;
 
 		return $group;
 	}
 
 	public static function get_group_name ($event_id=false) {
 		$group = self::get_group($event_id);
-		return (!empty($group->name))
-			? $group->name
+		return (!empty($group->post_title))
+			? $group->post_title
 			: ''
 		;
 	}
@@ -495,13 +448,13 @@ class Eab_GroupEvents_Shortcodes extends Eab_Codec {
 		} else {
 			// Keyword
 			if (in_array(trim($args['groups']), array('my', 'my-groups', 'my_groups')) && $args['user']) {
-				if (!function_exists('groups_get_groups')) return $content;
-				$groups = groups_get_groups(array('user_id' => $args['user']));
-				$args['groups'] = array_map('intval', wp_list_pluck($groups['groups'], 'id'));
+				if (!function_exists('cpc_get_user_groups')) return $content;
+				$groups = cpc_get_user_groups((int)$args['user'], 'active', get_current_blog_id());
+				$args['groups'] = array_map('intval', wp_list_pluck($groups, 'ID'));
 			} else if ('all' == trim($args['groups'])) {
-				if (!function_exists('groups_get_groups')) return $content;
-				$groups = groups_get_groups();
-				$args['groups'] = array_map('intval', wp_list_pluck($groups['groups'], 'id'));
+				if (!function_exists('cpc_get_groups_by_type')) return $content;
+				$groups = cpc_get_groups_by_type('all', -1, get_current_blog_id());
+				$args['groups'] = array_map('intval', wp_list_pluck($groups, 'ID'));
 			} else {
 				$args['groups'] = false;
 			}
@@ -531,11 +484,11 @@ class Eab_GroupEvents_Shortcodes extends Eab_Codec {
 				: false;
 			;
 			if ($method) add_filter('eab-collection-upcoming_weeks-week_number', $method);
-			$collection = new Eab_BuddyPress_GroupEventsWeeksCollection($args['groups'], $args['date'], $query);
+					$collection = new Eab_PSCommunity_GroupEventsWeeksCollection($args['groups'], $args['date'], $query);
 			if ($method) remove_filter('eab-collection-upcoming_weeks-week_number', $method);
 		} else {
 			// No lookahead, get the full month only
-			$collection =  new Eab_BuddyPress_GroupEventsCollection($args['groups'], $args['date'], $query);
+					$collection =  new Eab_PSCommunity_GroupEventsCollection($args['groups'], $args['date'], $query);
 		}
 		if ($order_method) remove_filter('eab-collection-date_ordering_direction', $order_method);
 		$events = $collection->to_collection();
@@ -550,7 +503,7 @@ class Eab_GroupEvents_Shortcodes extends Eab_Codec {
 
 	public function add_group_archives_shortcode_help ($help) {
 		$help[] = array(
-			'title' => __('BuddyPress-Gruppenarchive', 'eab'),
+			'title' => __('PS-Community-Gruppenarchive', 'eab'),
 			'tag' => 'eab_group_archives',
 			'arguments' => array(
 				'date' => array('help' => __('Startdatum - Standard <bold>Jetzt</bold>', 'eab'), 'type' => 'string:date'),

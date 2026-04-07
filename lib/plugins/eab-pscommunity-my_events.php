@@ -1,18 +1,18 @@
 <?php
 /*
-Plugin Name: BuddyPress: Meine Veranstaltungen
+Plugin Name: PS Community: Meine Veranstaltungen
 Description: Fügt Deinen Benutzerprofilen eine Registerkarte "Ereignisse" hinzu.
 Plugin URI: https://n3rds.work/piestingtal-source-project/eventsps-das-eventmanagment-fuer-wordpress/
 Version: 1.1
-AddonType: BuddyPress
+AddonType: PS Community
 Author: DerN3rd
 */
 
 /*
-Detail: Zeigt Listen der Benutzer-RSVPs auf den Mitgliederseiten Ihrer Benutzer an. Integriert Statusmeldungen für die BuddyPress Activity
+Detail: Zeigt Listen der Benutzer-RSVPs in PS Community Profilen an.
 */ 
 
-class Eab_BuddyPress_MyEvents {
+class Eab_PSCommunity_MyEvents {
 	
 	private $_data;
 	
@@ -21,7 +21,7 @@ class Eab_BuddyPress_MyEvents {
 	}
 
 	public static function serve () {
-		$me = new Eab_BuddyPress_MyEvents;
+		$me = new Eab_PSCommunity_MyEvents;
 		$me->_add_hooks();
 	}
 	
@@ -29,14 +29,12 @@ class Eab_BuddyPress_MyEvents {
 		add_action('admin_notices', array($this, 'show_nags'));
 		add_action('eab-settings-after_plugin_settings', array($this, 'show_settings'));
 		add_filter('eab-settings-before_save', array($this, 'save_settings'));
-		
-		add_action('bp_init', array($this, 'add_bp_profile_entry'));
 	}
 	
 	function show_nags () {
-		if (!defined('BP_VERSION')) {
+		if (!function_exists('cpc_render_profile_tabs')) {
 			echo '<div class="error"><p>' .
-				__("Du musst BuddyPress installiert und aktiviert haben, damit die Erweiterung <strong>Meine Ereignisse</strong> funktioniert", 'eab') .
+				__("Du musst PS Community Profile Tabs aktiviert haben, damit die Erweiterung <strong>Meine Ereignisse</strong> funktioniert", 'eab') .
 			'</p></div>';
 		}
 	}
@@ -46,130 +44,6 @@ class Eab_BuddyPress_MyEvents {
 		return current_user_can($post_type->cap->edit_posts);
 	}
 	
-	function add_bp_profile_entry () {
-		global $bp;
-		bp_core_new_nav_item(array(
-			'name' => __('Veranstaltungen', 'eab'),
-			'slug' => 'my-events',
-			'show_for_displayed_user' => true,
-			'default_subnav_slug' => ($this->_check_permissions() ? 'organized' : 'attending'),
-			'screen_function' => '__return_false',
-		));
-		if ($this->_check_permissions()) {
-			bp_core_new_subnav_item(array(
-				'name' => __('Organisiert', 'eab'),
-				'slug' => 'organized',
-				'parent_url' => $bp->displayed_user->domain . 'my-events' . '/',
-				'parent_slug' => 'my-events',
-				'screen_function' => array($this, 'bind_bp_organized_page'),
-			));
-		}
-		bp_core_new_subnav_item(array(
-			'name' => __('Teilnahme', 'eab'),
-			'slug' => 'attending',
-			'parent_url' => $bp->displayed_user->domain . 'my-events' . '/',
-			'parent_slug' => 'my-events',
-			'screen_function' => array($this, 'bind_bp_attending_page'),
-		));
-		bp_core_new_subnav_item(array(
-			'name' => __('Interresiert', 'eab'),
-			'slug' => 'mabe',
-			'parent_url' => $bp->displayed_user->domain . 'my-events' . '/',
-			'parent_slug' => 'my-events',
-			'screen_function' => array($this, 'bind_bp_maybe_page'),
-		));
-		bp_core_new_subnav_item(array(
-			'name' => __('Abgesagt', 'eab'),
-			'slug' => 'not-attending',
-			'parent_url' => $bp->displayed_user->domain . 'my-events' . '/',
-			'parent_slug' => 'my-events',
-			'screen_function' => array($this, 'bind_bp_not_attending_page'),
-		));
-		do_action('eab-events-my_events-set_up_navigation');
-	}
-	
-	function bind_bp_organized_page () {
-		add_action('bp_template_title', array($this, 'show_organized_title'));
-		add_action('bp_template_content', array($this, 'show_organized_body'));
-		add_action('bp_head', array($this, 'enqueue_dependencies'));
-		bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
-	}
-	function bind_bp_attending_page () {
-		add_action('bp_template_title', array($this, 'show_attending_title'));
-		add_action('bp_template_content', array($this, 'show_attending_body'));
-		add_action('bp_head', array($this, 'enqueue_dependencies'));
-		bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
-	}
-	function bind_bp_maybe_page () {
-		add_action('bp_template_title', array($this, 'show_maybe_title'));
-		add_action('bp_template_content', array($this, 'show_maybe_body'));
-		add_action('bp_head', array($this, 'enqueue_dependencies'));
-		bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
-	}
-	function bind_bp_not_attending_page () {
-		add_action('bp_template_title', array($this, 'show_not_attending_title'));
-		add_action('bp_template_content', array($this, 'show_not_attending_body'));
-		add_action('bp_head', array($this, 'enqueue_dependencies'));
-		bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
-	}
-	
-	function enqueue_dependencies () {
-		global $bp;
-		if ('my-events' != $bp->current_component) return false;
-		wp_enqueue_style('eab-bp-my_events', EAB_PLUGIN_URL . 'css/eab-buddypress-my_events.css');
-	}
-	
-	function show_organized_title () {
-		echo __('Organisierte Ereignisse', 'eab');
-	}
-	function show_attending_title () {
-		echo __('Teilnahme', 'eab');
-	}
-	function show_maybe_title () {
-		echo __('Mögliche Teilnahme', 'eab');
-	}
-	function show_not_attending_title () {
-		echo __('Abgesagte Teilnahme', 'eab');
-	}
-
-	function show_organized_body () {
-		global $bp;
-		echo '<div id="eab-bp-my_events-wrapper">';
-		echo '<div class="eab-bp-my_events eab-bp-organized">' . 
-			Eab_Template::get_user_organized_events($bp->displayed_user->id) .
-		'</div>';
-		echo '</div>';
-	}
-	function show_attending_body () {
-		global $bp;
-		$premium = $this->_data->get_option('bp-my_events-premium_events');
-		if (!empty($premium)) {
-			if ('nag' == $premium) add_filter('eab-event-user_events-before_meta', array($this, 'premium_event_rsvp'), 10, 3);
-			if ('hide' == $premium) add_filter('eab-event-user_events-exclude_event', array($this, 'exclude_premium_event_rsvp'), 10, 2);
-		}
-		echo '<div id="eab-bp-my_events-wrapper">';
-		echo '<div class="eab-bp-my_events eab-bp-rsvp_yes">' . 
-			Eab_Template::get_user_events(Eab_EventModel::BOOKING_YES, $bp->displayed_user->id) .
-		'</div>';
-		echo '</div>';
-	}
-	function show_maybe_body () {
-		global $bp;
-		echo '<div id="eab-bp-my_events-wrapper">';
-		echo '<div class="eab-bp-my_events eab-bp-rsvp_maybe">' . 
-			Eab_Template::get_user_events(Eab_EventModel::BOOKING_MAYBE, $bp->displayed_user->id) .
-		'</div>';
-		echo '</div>';
-	}
-	function show_not_attending_body () {
-		global $bp;
-		echo '<div id="eab-bp-my_events-wrapper">';
-		echo '<div class="eab-bp-my_events eab-bp-rsvp_no">' . 
-			Eab_Template::get_user_events(Eab_EventModel::BOOKING_NO, $bp->displayed_user->id) .
-		'</div>';
-		echo '</div>';
-	}
-
 	function premium_event_rsvp ($content, $event, $status) {
 		if (!$event->is_premium()) return $content;
 
@@ -226,7 +100,7 @@ class Eab_BuddyPress_MyEvents {
 	}
 }
 
-Eab_BuddyPress_MyEvents::serve();
+Eab_PSCommunity_MyEvents::serve();
 
 
 class Eab_MyEvents_Shortcodes extends Eab_Codec {

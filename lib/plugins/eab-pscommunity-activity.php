@@ -1,18 +1,18 @@
 <?php
 /*
-Plugin Name: BuddyPress: Akitivitäts-Statusupdates
+Plugin Name: PS Community: Aktivitäts-Statusupdates
 Description: Veröffentlicht eine Aktivitätsaktualisierung automatisch, wenn mit Deinen Ereignissen etwas passiert.
 Plugin URI: https://n3rds.work/piestingtal-source-project/eventsps-das-eventmanagment-fuer-wordpress/
 Version: 1.2
-AddonType: BuddyPress
+AddonType: PS Community
 Author: DerN3rd
 */
 
 /*
-Detail: Dieses Add-On veröffentlicht automatisch eine Aktivitätsaktualisierung, wenn eine vordefinierte Aktion in PS-Events gemäß Deinen Einstellungen ausgeführt wird.
+Detail: Dieses Add-On veröffentlicht automatisch Aktivitätsaktualisierungen in PS Community, wenn eine vordefinierte Aktion in PS-Events gemäß Deinen Einstellungen ausgeführt wird.
 */ 
 
-class Eab_BuddyPress_AutoUpdateActivity {
+class Eab_PSCommunity_AutoUpdateActivity {
 	
 	private $_data;
 	
@@ -21,7 +21,7 @@ class Eab_BuddyPress_AutoUpdateActivity {
 	}
 	
 	public static function serve () {
-		$me = new Eab_BuddyPress_AutoUpdateActivity;
+		$me = new Eab_PSCommunity_AutoUpdateActivity;
 		$me->_add_hooks();
 	}
 	
@@ -38,8 +38,67 @@ class Eab_BuddyPress_AutoUpdateActivity {
 		add_action('psource_event_booking_no', array($this, 'dispatch_negative_rsvp_activity_update'), 10, 2);
 	}
 
+	private function can_use_cpc_activity () {
+		return post_type_exists('cpc_activity');
+	}
+
+	private function get_user_link ($user_id) {
+		$user_id = (int)$user_id;
+		$user = get_user_by('id', $user_id);
+		if (!$user) return __('Ein Benutzer', 'eab');
+		return sprintf('<a href="%s">%s</a>', esc_url(get_author_posts_url($user_id)), esc_html($user->display_name));
+	}
+
+	private function cpc_activity_exists ($activity_key) {
+		if (!$this->can_use_cpc_activity() || !$activity_key) return false;
+
+		$q = new WP_Query(array(
+			'post_type' => 'cpc_activity',
+			'post_status' => 'publish',
+			'posts_per_page' => 1,
+			'fields' => 'ids',
+			'no_found_rows' => true,
+			'meta_query' => array(
+				array(
+					'key' => 'cpc_event_activity_key',
+					'value' => sanitize_key($activity_key),
+				),
+			),
+		));
+
+		return !empty($q->posts);
+	}
+
+	private function add_cpc_activity ($user_id, $message, $activity_key = '') {
+		if (!$this->can_use_cpc_activity() || !$message) return false;
+
+		$user_id = (int)$user_id;
+		if (!$user_id) return false;
+
+		if ($activity_key && $this->cpc_activity_exists($activity_key)) return false;
+
+		$post_id = wp_insert_post(array(
+			'post_title' => wp_strip_all_tags($message),
+			'post_status' => 'publish',
+			'post_type' => 'cpc_activity',
+			'post_author' => $user_id,
+			'ping_status' => 'closed',
+			'comment_status' => 'open',
+		));
+
+		if (!$post_id || is_wp_error($post_id)) return false;
+
+		update_post_meta($post_id, 'cpc_target', $user_id);
+		update_post_meta($post_id, 'cpc_activity_type', 'event');
+		if ($activity_key) {
+			update_post_meta($post_id, 'cpc_event_activity_key', sanitize_key($activity_key));
+		}
+
+		return true;
+	}
+
 	function dispatch_creation_activity_update ($post_id) {
-		if (!function_exists('bp_activity_get')) return false; // WTF
+		if (!$this->can_use_cpc_activity()) return false;
 		
 		$created = $this->_data->get_option('bp-activity_autoupdate-event_created');
 		if (!$created) return false;
@@ -47,7 +106,7 @@ class Eab_BuddyPress_AutoUpdateActivity {
 		$event = new Eab_EventModel(get_post($post_id));
 		if (!$event->is_published()) return false;
 		
-		$user_link = bp_core_get_userlink($event->get_author());
+		$user_link = $this->get_user_link($event->get_author());
 		$update = false;
 
 		$group_id =  $this->_is_group_event($event->get_id());
@@ -56,9 +115,10 @@ class Eab_BuddyPress_AutoUpdateActivity {
 		if ('any' == $created) {
 			$update = sprintf(__('%s hat eine Veranstaltung erstellt', 'eab'), $user_link);
 		} else if ('group' == $created && $group_id) {
-			$group = groups_get_group(array('group_id' => $group_id));
-			$group_link = bp_get_group_permalink($group);
-			$group_name = bp_get_group_name($group);
+			$group = get_post((int)$group_id);
+			if (!$group || $group->post_type !== 'cpc_group') return false;
+			$group_link = get_permalink($group->ID);
+			$group_name = $group->post_title;
 			$update = sprintf(__('%s hat eine Veranstaltung in <a href="%s">%s</a> erstellt', 'eab'), $user_link, $group_link, $group_name);
 		} else if ('pa' == $created && $public_announcement) {
 			$update = sprintf(__('%s hat eine öffentliche Veranstaltung erstellt', 'eab'), $user_link);
@@ -67,43 +127,8 @@ class Eab_BuddyPress_AutoUpdateActivity {
 		if (!$update) return false;
 		$update = sprintf("{$update}, <a href='%s'>%s</a>", get_permalink($event->get_id()), $event->get_title());
 
-		$existing = bp_activity_get(array("filter" => array(
-			"object" => 'eab_events',
-			"action" => 'event_created',
-			'primary_id' => $event->get_id(),
-		)));
-		if (isset($existing['activities']) && !empty($existing['activities'])) return false;
-
-		$activity = array(
-			'action' => $update,
-			'component' => 'eab_events',
-			'type' => 'event_created',
-			'item_id' => $event->get_id(),
-			'user_id' => $event->get_author()
-		);
-		bp_activity_add($activity);
-
-		if ($this->_data->get_option('bp-activity_autoupdate-created_group_post') && $group_id) {
-			global $bp;
-			$group_activity = $activity;
-			$group_activity['component'] = $bp->groups->id;
-			$group_activity['item_id'] = $group_id;
-			$group_activity['secondary_item_id'] = $event->get_id();
-			$existing = bp_activity_get(array("filter" => array(
-				'user_id' => $user_id,
-				"object" => $bp->groups->id,
-				"action" => 'event_created',
-				'primary_id' => $group_id,
-				'secondary_id' => $event->get_id(),
-			)));
-			if (isset($existing['activities']) && !empty($existing['activities'])) {
-				$old = reset($existing['activities']);
-				if (is_object($old) && isset($old->id)) $group_activity['id'] = $old->id;
-			}
-			
-			// Add group activity update
-			groups_record_activity($group_activity);
-		}
+		$activity_key = 'event_created_' . (int)$event->get_id();
+		$this->add_cpc_activity((int)$event->get_author(), $update, $activity_key);
 	}
 
 	function dispatch_positive_rsvp_activity_update ($event_id, $user_id) {
@@ -126,7 +151,7 @@ class Eab_BuddyPress_AutoUpdateActivity {
 		if ($this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_only') && !$group_id) return false;
 
 		$event = new Eab_EventModel(get_post($event_id));
-		$user_link = bp_core_get_userlink($user_id);
+		$user_link = $this->get_user_link($user_id);
 		$update = false;
 
 		switch ($rsvp) {
@@ -142,58 +167,14 @@ class Eab_BuddyPress_AutoUpdateActivity {
 		}
 		if (!$update) return false;
 
-		$raw_activity = array(
-			'user_id' => $user_id,
-			'action' => $update,
-			'type' => 'event_rsvp',
-			'item_id' => $event->get_id(),
-		);
-		
-		if ($this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_post') && $group_id) {
-			global $bp;
-			$group_activity = $raw_activity;
-			$group_activity['component'] = $bp->groups->id;
-			$group_activity['item_id'] = $group_id;
-			$group_activity['secondary_item_id'] = $event->get_id();
-			$existing = bp_activity_get(array("filter" => array(
-				'user_id' => $user_id,
-				"object" => $bp->groups->id,
-				"action" => 'event_rsvp',
-				'primary_id' => $group_id,
-				'secondary_id' => $event->get_id(),
-			)));
-			if (isset($existing['activities']) && !empty($existing['activities'])) {
-				$old = reset($existing['activities']);
-				if (is_object($old) && isset($old->id)) $group_activity['id'] = $old->id;
-			}
-			
-			// Add group activity update
-			groups_record_activity($group_activity);
-		} else {
-			$activity = $raw_activity;
-			$activity['component'] = 'eab_events';
-			$existing = bp_activity_get(array("filter" => array(
-				'user_id' => $user_id,
-				"object" => 'eab_events',
-				"action" => 'event_rsvp',
-				'primary_id' => $event->get_id(),
-			)));
-			if (isset($existing['activities']) && !empty($existing['activities'])) {
-				$old = reset($existing['activities']);
-				if (is_object($old) && isset($old->id)) $activity['id'] = $old->id;
-			}
-			
-			// Add site/user activity update
-			bp_activity_add($activity);
-		}
+		$activity_key = 'event_rsvp_' . (int)$event->get_id() . '_' . (int)$user_id . '_' . sanitize_key((string)$rsvp);
+		$this->add_cpc_activity((int)$user_id, $update, $activity_key);
 	}
 	
 	function show_nags () {
 		$msg = false;
-		if (!defined('BP_VERSION')) {
-			$msg = __("BuddyPress muss installiert und aktiviert sein, damit die Erweiterung für automatische Aktivitätsaktualisierungen funktioniert", 'eab');
-		} else if (!class_exists('BP_Activity_Activity')) {
-			$msg = __("Die BuddyPress-Aktivitätskomponente muss aktiviert sein, damit die Erweiterung für die automatische Aktualisierung von Aktivitäten funktioniert", 'eab');
+		if (!$this->can_use_cpc_activity()) {
+			$msg = __("PS Community Activity muss aktiv sein, damit die automatische Aktualisierung von Aktivitäten funktioniert", 'eab');
 		}
 		if (!$msg) return false;
 
@@ -206,19 +187,19 @@ class Eab_BuddyPress_AutoUpdateActivity {
 
 		$_created = $this->_data->get_option('bp-activity_autoupdate-event_created');
 		$event_created = 'any' == $_created ? 'checked="checked"' : false;
-		$group_event_created = class_exists('Eab_BuddyPress_GroupEvents') && 'group' == $_created ? 'checked="checked"' : false;
+		$group_event_created = class_exists('Eab_PSCommunity_GroupEvents') && 'group' == $_created ? 'checked="checked"' : false;
 		$pa_event_created = class_exists('Eab_Events_Pae') && 'pa' == $_created ? 'checked="checked"' : false;
 		$skip_created = !$_created ? 'checked="checked"' : false;
 		
-		$created_group_post = class_exists('Eab_BuddyPress_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-created_group_post') ? 'checked="checked"' : false;
+		$created_group_post = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-created_group_post') ? 'checked="checked"' : false;
 		
 		$user_rsvp_yes = $this->_data->get_option('bp-activity_autoupdate-user_rsvp_yes') ? 'checked="checked"' : false;
 		$user_rsvp_maybe = $this->_data->get_option('bp-activity_autoupdate-user_rsvp_maybe') ? 'checked="checked"' : false;
 		$user_rsvp_no = $this->_data->get_option('bp-activity_autoupdate-user_rsvp_no') ? 'checked="checked"' : false;
 
 		
-		$user_rsvp_group_only = class_exists('Eab_BuddyPress_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_only') ? 'checked="checked"' : false;
-		$user_rsvp_group_post = class_exists('Eab_BuddyPress_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_post') ? 'checked="checked"' : false;
+		$user_rsvp_group_only = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_only') ? 'checked="checked"' : false;
+		$user_rsvp_group_post = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_post') ? 'checked="checked"' : false;
 ?>
 <div id="eab-settings-activity_autoupdate" class="eab-metabox postbox">
 	<h3 class="eab-hndle"><?php _e('Einstellungen für die automatische Aktivitätsaktualisierung', 'eab'); ?></h3>
@@ -229,7 +210,7 @@ class Eab_BuddyPress_AutoUpdateActivity {
 			<br />	
 			<input type="radio" id="eab_event-bp-activity_autoupdate-event_created" name="eab-bp-activity_autoupdate[event_created]" value="any" <?php print $event_created; ?> />
 			<label for="eab_event-bp-activity_autoupdate-event_created"><?php _e('Jedes Ereignis', 'eab'); ?></label>
-		<?php if (class_exists('Eab_BuddyPress_GroupEvents')) { ?>
+		<?php if (class_exists('Eab_PSCommunity_GroupEvents')) { ?>
 			<br />	
 			<input type="radio" id="eab_event-bp-activity_autoupdate-group_event_created" name="eab-bp-activity_autoupdate[event_created]" value="group" <?php print $group_event_created; ?> />
 			<label for="eab_event-bp-activity_autoupdate-group_event_created"><?php _e('Gruppenveranstaltung', 'eab'); ?></label>
@@ -259,7 +240,7 @@ class Eab_BuddyPress_AutoUpdateActivity {
 			<br />
 			<input type="checkbox" id="eab_event-bp-activity_autoupdate-user_rsvp_no" name="eab-bp-activity_autoupdate[user_rsvp_no]" value="1" <?php print $user_rsvp_no; ?> />
 			<label for="eab_event-bp-activity_autoupdate-user_rsvp_no"><?php _e('... kommt nicht', 'eab'); ?></label>
-		<?php if (class_exists('Eab_BuddyPress_GroupEvents')) { ?>
+		<?php if (class_exists('Eab_PSCommunity_GroupEvents')) { ?>
 			<br />
 			<br />
 			<input type="checkbox" id="eab_event-bp-activity_autoupdate-user_rsvp_group_post" name="eab-bp-activity_autoupdate[user_rsvp_group_post]" value="1" <?php print $user_rsvp_group_post; ?> />
@@ -283,7 +264,7 @@ class Eab_BuddyPress_AutoUpdateActivity {
 	}
 
 	private function _is_group_event ($post_id) {
-		if (!class_exists('Eab_BuddyPress_GroupEvents')) return false;
+		if (!class_exists('Eab_PSCommunity_GroupEvents')) return false;
 		return get_post_meta($post_id, 'eab_event-bp-group_event', true);
 	}
 
@@ -294,4 +275,4 @@ class Eab_BuddyPress_AutoUpdateActivity {
 	
 }
 
-Eab_BuddyPress_AutoUpdateActivity::serve();
+Eab_PSCommunity_AutoUpdateActivity::serve();
