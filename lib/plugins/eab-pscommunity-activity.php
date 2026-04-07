@@ -100,7 +100,7 @@ class Eab_PSCommunity_AutoUpdateActivity {
 	function dispatch_creation_activity_update ($post_id) {
 		if (!$this->can_use_cpc_activity()) return false;
 		
-		$created = $this->_data->get_option('bp-activity_autoupdate-event_created');
+		$created = $this->_data->get_option('psc-activity_autoupdate-event_created');
 		if (!$created) return false;
 
 		$event = new Eab_EventModel(get_post($post_id));
@@ -132,23 +132,23 @@ class Eab_PSCommunity_AutoUpdateActivity {
 	}
 
 	function dispatch_positive_rsvp_activity_update ($event_id, $user_id) {
-		if (!$this->_data->get_option('bp-activity_autoupdate-user_rsvp_yes')) return false;
+		if (!$this->_data->get_option('psc-activity_autoupdate-user_rsvp_yes')) return false;
 		return $this->_construct_unique_rsvp_activity($event_id, $user_id, Eab_EventModel::BOOKING_YES);
 	}
 
 	function dispatch_maybe_rsvp_activity_update ($event_id, $user_id) {
-		if (!$this->_data->get_option('bp-activity_autoupdate-user_rsvp_maybe')) return false;
+		if (!$this->_data->get_option('psc-activity_autoupdate-user_rsvp_maybe')) return false;
 		return $this->_construct_unique_rsvp_activity($event_id, $user_id, Eab_EventModel::BOOKING_MAYBE);
 	}
 
 	function dispatch_negative_rsvp_activity_update ($event_id, $user_id) {
-		if (!$this->_data->get_option('bp-activity_autoupdate-user_rsvp_no')) return false;
+		if (!$this->_data->get_option('psc-activity_autoupdate-user_rsvp_no')) return false;
 		return $this->_construct_unique_rsvp_activity($event_id, $user_id, Eab_EventModel::BOOKING_NO);
 	}
 
 	private function _construct_unique_rsvp_activity ($event_id, $user_id, $rsvp) {
 		$group_id =  $this->_is_group_event($event_id);
-		if ($this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_only') && !$group_id) return false;
+		if ($this->_data->get_option('psc-activity_autoupdate-user_rsvp_group_only') && !$group_id) return false;
 
 		$event = new Eab_EventModel(get_post($event_id));
 		$user_link = $this->get_user_link($user_id);
@@ -185,21 +185,21 @@ class Eab_PSCommunity_AutoUpdateActivity {
 		$tips = new PSource_HelpTooltips();
 		$tips->set_icon_url( EAB_PLUGIN_URL . 'img/information.png' );
 
-		$_created = $this->_data->get_option('bp-activity_autoupdate-event_created');
+		$_created = $this->_data->get_option('psc-activity_autoupdate-event_created');
 		$event_created = 'any' == $_created ? 'checked="checked"' : false;
 		$group_event_created = class_exists('Eab_PSCommunity_GroupEvents') && 'group' == $_created ? 'checked="checked"' : false;
 		$pa_event_created = class_exists('Eab_Events_Pae') && 'pa' == $_created ? 'checked="checked"' : false;
 		$skip_created = !$_created ? 'checked="checked"' : false;
 		
-		$created_group_post = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-created_group_post') ? 'checked="checked"' : false;
+		$created_group_post = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('psc-activity_autoupdate-created_group_post') ? 'checked="checked"' : false;
 		
-		$user_rsvp_yes = $this->_data->get_option('bp-activity_autoupdate-user_rsvp_yes') ? 'checked="checked"' : false;
-		$user_rsvp_maybe = $this->_data->get_option('bp-activity_autoupdate-user_rsvp_maybe') ? 'checked="checked"' : false;
-		$user_rsvp_no = $this->_data->get_option('bp-activity_autoupdate-user_rsvp_no') ? 'checked="checked"' : false;
+		$user_rsvp_yes = $this->_data->get_option('psc-activity_autoupdate-user_rsvp_yes') ? 'checked="checked"' : false;
+		$user_rsvp_maybe = $this->_data->get_option('psc-activity_autoupdate-user_rsvp_maybe') ? 'checked="checked"' : false;
+		$user_rsvp_no = $this->_data->get_option('psc-activity_autoupdate-user_rsvp_no') ? 'checked="checked"' : false;
 
 		
-		$user_rsvp_group_only = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_only') ? 'checked="checked"' : false;
-		$user_rsvp_group_post = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('bp-activity_autoupdate-user_rsvp_group_post') ? 'checked="checked"' : false;
+		$user_rsvp_group_only = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('psc-activity_autoupdate-user_rsvp_group_only') ? 'checked="checked"' : false;
+		$user_rsvp_group_post = class_exists('Eab_PSCommunity_GroupEvents') && $this->_data->get_option('psc-activity_autoupdate-user_rsvp_group_post') ? 'checked="checked"' : false;
 ?>
 <div id="eab-settings-activity_autoupdate" class="eab-metabox postbox">
 	<h3 class="eab-hndle"><?php _e('Einstellungen für die automatische Aktivitätsaktualisierung', 'eab'); ?></h3>
@@ -208,43 +208,43 @@ class Eab_PSCommunity_AutoUpdateActivity {
 			<label><?php _e('Aktivitäts-Feed automatisch aktualisieren, wenn ein Ereignis erstellt wird:', 'eab'); ?></label>	
 			<span><?php echo $tips->add_tip(__('Eine Aktivitätsaktualisierung, die jedes Mal veröffentlicht wird, wenn ein Ereignis erstellt wird.', 'eab')); ?></span>
 			<br />	
-			<input type="radio" id="eab_event-bp-activity_autoupdate-event_created" name="eab-bp-activity_autoupdate[event_created]" value="any" <?php print $event_created; ?> />
-			<label for="eab_event-bp-activity_autoupdate-event_created"><?php _e('Jedes Ereignis', 'eab'); ?></label>
+			<input type="radio" id="eab_event-psc-activity_autoupdate-event_created" name="eab-psc-activity_autoupdate[event_created]" value="any" <?php print $event_created; ?> />
+			<label for="eab_event-psc-activity_autoupdate-event_created"><?php _e('Jedes Ereignis', 'eab'); ?></label>
 		<?php if (class_exists('Eab_PSCommunity_GroupEvents')) { ?>
 			<br />	
-			<input type="radio" id="eab_event-bp-activity_autoupdate-group_event_created" name="eab-bp-activity_autoupdate[event_created]" value="group" <?php print $group_event_created; ?> />
-			<label for="eab_event-bp-activity_autoupdate-group_event_created"><?php _e('Gruppenveranstaltung', 'eab'); ?></label>
+			<input type="radio" id="eab_event-psc-activity_autoupdate-group_event_created" name="eab-psc-activity_autoupdate[event_created]" value="group" <?php print $group_event_created; ?> />
+			<label for="eab_event-psc-activity_autoupdate-group_event_created"><?php _e('Gruppenveranstaltung', 'eab'); ?></label>
 		<?php } ?>
 		<?php if (class_exists('Eab_Events_Pae')) { ?>
 			<br />	
-			<input type="radio" id="eab_event-bp-activity_autoupdate-pa_event_created" name="eab-bp-activity_autoupdate[event_created]" value="pa" <?php print $pa_event_created; ?> />
-			<label for="eab_event-bp-activity_autoupdate-pa_event_created"><?php _e('Öffentliche Ankündigungsveranstaltung', 'eab'); ?></label>
+			<input type="radio" id="eab_event-psc-activity_autoupdate-pa_event_created" name="eab-psc-activity_autoupdate[event_created]" value="pa" <?php print $pa_event_created; ?> />
+			<label for="eab_event-psc-activity_autoupdate-pa_event_created"><?php _e('Öffentliche Ankündigungsveranstaltung', 'eab'); ?></label>
 		<?php } ?>
 			<br />
-			<input type="radio" id="eab_event-bp-activity_autoupdate-skip_created" name="eab-bp-activity_autoupdate[event_created]" value="any" <?php print $skip_created; ?> />
-			<label for="eab_event-bp-activity_autoupdate-skip_created"><?php _e('Aktivität nicht aktualisieren', 'eab'); ?></label>
+			<input type="radio" id="eab_event-psc-activity_autoupdate-skip_created" name="eab-psc-activity_autoupdate[event_created]" value="any" <?php print $skip_created; ?> />
+			<label for="eab_event-psc-activity_autoupdate-skip_created"><?php _e('Aktivität nicht aktualisieren', 'eab'); ?></label>
 			<br />	
 			<br />	
-			<input type="checkbox" id="eab_event-bp-activity_autoupdate-created_group_post" name="eab-bp-activity_autoupdate[created_group_post]" value="1" <?php print $created_group_post; ?> />
-			<label for="eab_event-bp-activity_autoupdate-created_group_post"><?php _e('Aktualisiert bei der Erstellung von Gruppenereignissen immer die entsprechenden Gruppenfeeds', 'eab'); ?></label>
+			<input type="checkbox" id="eab_event-psc-activity_autoupdate-created_group_post" name="eab-psc-activity_autoupdate[created_group_post]" value="1" <?php print $created_group_post; ?> />
+			<label for="eab_event-psc-activity_autoupdate-created_group_post"><?php _e('Aktualisiert bei der Erstellung von Gruppenereignissen immer die entsprechenden Gruppenfeeds', 'eab'); ?></label>
 		</div>
 		<div class="eab-settings-settings_item" style="line-height:1.8em">
 			<label><?php _e('Aktivitäts-Feed beim Benutzer automatisch aktualisieren:', 'eab'); ?></label>				
 			<span><?php echo $tips->add_tip(__('Ein Aktivitätsupdate, das jedes Mal veröffentlicht wird, wenn ein Benutzer reagiert.', 'eab')); ?></span>
 			<br />
-			<input type="checkbox" id="eab_event-bp-activity_autoupdate-user_rsvp_yes" name="eab-bp-activity_autoupdate[user_rsvp_yes]" value="1" <?php print $user_rsvp_yes; ?> />
-			<label for="eab_event-bp-activity_autoupdate-user_rsvp_yes"><?php _e('... kommt', 'eab'); ?></label>
+			<input type="checkbox" id="eab_event-psc-activity_autoupdate-user_rsvp_yes" name="eab-psc-activity_autoupdate[user_rsvp_yes]" value="1" <?php print $user_rsvp_yes; ?> />
+			<label for="eab_event-psc-activity_autoupdate-user_rsvp_yes"><?php _e('... kommt', 'eab'); ?></label>
 			<br />
-			<input type="checkbox" id="eab_event-bp-activity_autoupdate-user_rsvp_maybe" name="eab-bp-activity_autoupdate[user_rsvp_maybe]" value="1" <?php print $user_rsvp_maybe; ?> />
-			<label for="eab_event-bp-activity_autoupdate-user_rsvp_maybe"><?php _e('... hat Interesse', 'eab'); ?></label>
+			<input type="checkbox" id="eab_event-psc-activity_autoupdate-user_rsvp_maybe" name="eab-psc-activity_autoupdate[user_rsvp_maybe]" value="1" <?php print $user_rsvp_maybe; ?> />
+			<label for="eab_event-psc-activity_autoupdate-user_rsvp_maybe"><?php _e('... hat Interesse', 'eab'); ?></label>
 			<br />
-			<input type="checkbox" id="eab_event-bp-activity_autoupdate-user_rsvp_no" name="eab-bp-activity_autoupdate[user_rsvp_no]" value="1" <?php print $user_rsvp_no; ?> />
-			<label for="eab_event-bp-activity_autoupdate-user_rsvp_no"><?php _e('... kommt nicht', 'eab'); ?></label>
+			<input type="checkbox" id="eab_event-psc-activity_autoupdate-user_rsvp_no" name="eab-psc-activity_autoupdate[user_rsvp_no]" value="1" <?php print $user_rsvp_no; ?> />
+			<label for="eab_event-psc-activity_autoupdate-user_rsvp_no"><?php _e('... kommt nicht', 'eab'); ?></label>
 		<?php if (class_exists('Eab_PSCommunity_GroupEvents')) { ?>
 			<br />
 			<br />
-			<input type="checkbox" id="eab_event-bp-activity_autoupdate-user_rsvp_group_post" name="eab-bp-activity_autoupdate[user_rsvp_group_post]" value="1" <?php print $user_rsvp_group_post; ?> />
-			<label for="eab_event-bp-activity_autoupdate-user_rsvp_group_post"><?php _e('Aktualisiert den Gruppenaktivitäts-Feed', 'eab'); ?></label>
+			<input type="checkbox" id="eab_event-psc-activity_autoupdate-user_rsvp_group_post" name="eab-psc-activity_autoupdate[user_rsvp_group_post]" value="1" <?php print $user_rsvp_group_post; ?> />
+			<label for="eab_event-psc-activity_autoupdate-user_rsvp_group_post"><?php _e('Aktualisiert den Gruppenaktivitäts-Feed', 'eab'); ?></label>
 		<?php } ?>
 		</div>
 	</div>
@@ -253,13 +253,13 @@ class Eab_PSCommunity_AutoUpdateActivity {
 	}
 
 	function save_settings ($options) {
-		$options['bp-activity_autoupdate-event_created'] = $_POST['eab-bp-activity_autoupdate']['event_created'];
-		$options['bp-activity_autoupdate-created_group_post'] = !empty($_POST['eab-bp-activity_autoupdate']['created_group_post']);
-		$options['bp-activity_autoupdate-user_rsvp_yes'] = !empty($_POST['eab-bp-activity_autoupdate']['user_rsvp_yes']);
-		$options['bp-activity_autoupdate-user_rsvp_maybe'] = !empty($_POST['eab-bp-activity_autoupdate']['user_rsvp_maybe']);
-		$options['bp-activity_autoupdate-user_rsvp_no'] = !empty($_POST['eab-bp-activity_autoupdate']['user_rsvp_no']);
-		$options['bp-activity_autoupdate-user_rsvp_group_only'] = !empty($_POST['eab-bp-activity_autoupdate']['user_rsvp_group_only']);
-		$options['bp-activity_autoupdate-user_rsvp_group_post'] = !empty($_POST['eab-bp-activity_autoupdate']['user_rsvp_group_post']);
+		$options['psc-activity_autoupdate-event_created'] = $_POST['eab-psc-activity_autoupdate']['event_created'];
+		$options['psc-activity_autoupdate-created_group_post'] = !empty($_POST['eab-psc-activity_autoupdate']['created_group_post']);
+		$options['psc-activity_autoupdate-user_rsvp_yes'] = !empty($_POST['eab-psc-activity_autoupdate']['user_rsvp_yes']);
+		$options['psc-activity_autoupdate-user_rsvp_maybe'] = !empty($_POST['eab-psc-activity_autoupdate']['user_rsvp_maybe']);
+		$options['psc-activity_autoupdate-user_rsvp_no'] = !empty($_POST['eab-psc-activity_autoupdate']['user_rsvp_no']);
+		$options['psc-activity_autoupdate-user_rsvp_group_only'] = !empty($_POST['eab-psc-activity_autoupdate']['user_rsvp_group_only']);
+		$options['psc-activity_autoupdate-user_rsvp_group_post'] = !empty($_POST['eab-psc-activity_autoupdate']['user_rsvp_group_post']);
 		return $options;
 	}
 

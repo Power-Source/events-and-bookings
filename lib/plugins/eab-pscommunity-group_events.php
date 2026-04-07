@@ -33,11 +33,11 @@ class Eab_PSCommunity_GroupEvents {
 		add_action('eab-settings-after_plugin_settings', array($this, 'show_settings'));
 		add_filter('eab-settings-before_save', array($this, 'save_settings'));
 		
-		if ($this->_data->get_option('bp-group_event-auto_join_groups')) {
+		if ($this->_data->get_option('psc-group_event-auto_join_groups')) {
 			add_action('psource_event_booking_yes', array($this, 'auto_join_group'), 10, 2);
 			add_action('psource_event_booking_maybe', array($this, 'auto_join_group'), 10, 2);
 		}
-		if ($this->_data->get_option('bp-group_event-private_events') || function_exists('cpc_is_group_member')) {
+		if ($this->_data->get_option('psc-group_event-private_events') || function_exists('cpc_is_group_member')) {
 			add_filter('psource-query', array($this, 'filter_query'));
 		}
 
@@ -65,22 +65,22 @@ class Eab_PSCommunity_GroupEvents {
 	}
 
 	function widget_instance_defaults ($defaults) {
-		$defaults['show_bp_group'] = false;
+		$defaults['show_psc_group'] = false;
 		return $defaults;
 	}
 
 	function widget_instance_update ($instance, $new) {
-		$instance['show_bp_group'] = (int)$new['show_bp_group'];
+		$instance['show_psc_group'] = (int)$new['show_psc_group'];
 		return $instance;
 	}
 
 	function widget_form ($options, $widget) {
 		?>
-<label for="<?php echo $widget->get_field_id('show_bp_group'); ?>" style="display:block;">
+<label for="<?php echo $widget->get_field_id('show_psc_group'); ?>" style="display:block;">
 	<input type="checkbox" 
-		id="<?php echo $widget->get_field_id('show_bp_group'); ?>" 
-		name="<?php echo $widget->get_field_name('show_bp_group'); ?>" 
-		value="1" <?php echo ($options['show_bp_group'] ? 'checked="checked"' : ''); ?> 
+		id="<?php echo $widget->get_field_id('show_psc_group'); ?>" 
+		name="<?php echo $widget->get_field_name('show_psc_group'); ?>" 
+		value="1" <?php echo ($options['show_psc_group'] ? 'checked="checked"' : ''); ?> 
 	/>
 	<?php _e('PS Community Gruppe anzeigen', 'eab'); ?>
 </label>
@@ -88,7 +88,7 @@ class Eab_PSCommunity_GroupEvents {
 	}
 
 	function widget_event_group ($options, $event) {
-		if (empty($options['show_bp_group'])) return false;
+		if (empty($options['show_psc_group'])) return false;
 		$name = Eab_GroupEvents_Template::get_group_name($event->get_id());
 		if (!$name) return false;
 		echo '<div class="eab-event_group">' . $name . '</div>';
@@ -148,8 +148,8 @@ class Eab_PSCommunity_GroupEvents {
 		}
 
 		$groups = array();
-		if ($this->_data->get_option('bp-group_event-user_groups_only')) {
-			$allow_all_for_admin = is_super_admin() && $this->_data->get_option('bp-group_event-user_groups_only-unless_superadmin');
+		if ($this->_data->get_option('psc-group_event-user_groups_only')) {
+			$allow_all_for_admin = is_super_admin() && $this->_data->get_option('psc-group_event-user_groups_only-unless_superadmin');
 			if (!$allow_all_for_admin) {
 				$groups = cpc_get_user_groups((int)$user_id, 'active', get_current_blog_id());
 			}
@@ -164,7 +164,7 @@ class Eab_PSCommunity_GroupEvents {
 	
 	function auto_join_group ($event_id, $user_id) {
 		if (!function_exists('cpc_add_group_member') || !function_exists('cpc_is_group_member')) return false;
-		if (!$this->_data->get_option('bp-group_event-auto_join_groups')) return false;
+		if (!$this->_data->get_option('psc-group_event-auto_join_groups')) return false;
 		$group_id = (int)get_post_meta($event_id, 'eab_event-bp-group_event', true);
 		if (!$group_id) return false;
 		if (!cpc_is_group_member((int)$user_id, $group_id, get_current_blog_id())) {
@@ -188,36 +188,36 @@ class Eab_PSCommunity_GroupEvents {
 	function show_settings () {
 		$tips = new PSource_HelpTooltips();
 		$tips->set_icon_url(EAB_PLUGIN_URL . 'img/information.png');
-		$checked = $this->_data->get_option('bp-group_event-auto_join_groups') ? 'checked="checked"' : '';
-		$private = $this->_data->get_option('bp-group_event-private_events') ? 'checked="checked"' : '';
-		$user_groups_only = $this->_data->get_option('bp-group_event-user_groups_only') ? 'checked="checked"' : '';
-		$user_groups_only_unless_superadmin = $this->_data->get_option('bp-group_event-user_groups_only-unless_superadmin') ? 'checked="checked"' : '';
+		$checked = $this->_data->get_option('psc-group_event-auto_join_groups') ? 'checked="checked"' : '';
+		$private = $this->_data->get_option('psc-group_event-private_events') ? 'checked="checked"' : '';
+		$user_groups_only = $this->_data->get_option('psc-group_event-user_groups_only') ? 'checked="checked"' : '';
+		$user_groups_only_unless_superadmin = $this->_data->get_option('psc-group_event-user_groups_only-unless_superadmin') ? 'checked="checked"' : '';
 		$eab_event_bp_group_event_email_grp_member = $this->_data->get_option('eab_event_bp_group_event_email_grp_member') ? 'checked="checked"' : '';
 ?>
 <div id="eab-settings-group_events" class="eab-metabox postbox">
 	<h3 class="eab-hndle"><?php _e('Einstellungen für Gruppenereignisse', 'eab'); ?></h3>
 	<div class="eab-inside">
 		<div class="eab-settings-settings_item">
-	    	<label for="eab_event-bp-group_event-auto_join_groups"><?php _e('Automatisch der Gruppe beitreten bei Veranstaltungs-Anmeldungen', 'eab'); ?>?</label>
-			<input type="checkbox" id="eab_event-bp-group_event-auto_join_groups" name="event_default[bp-group_event-auto_join_groups]" value="1" <?php print $checked; ?> />
+	    	<label for="eab_event-psc-group_event-auto_join_groups"><?php _e('Automatisch der Gruppe beitreten bei Veranstaltungs-Anmeldungen', 'eab'); ?>?</label>
+			<input type="checkbox" id="eab_event-psc-group_event-auto_join_groups" name="event_default[psc-group_event-auto_join_groups]" value="1" <?php print $checked; ?> />
 			<span><?php echo $tips->add_tip(__('Wenn sich Deine Benutzer positiv zu Einem Gruppenereignis melden, werden sie auch automatisch der Gruppe beitreten, zu der das Ereignis gehört.', 'eab')); ?></span>
 	    </div>
 		<div class="eab-settings-settings_item">
-	    	<label for="eab_event-bp-group_event-private_events"><?php _e('Gruppenveranstaltungen sind für Gruppen privat', 'eab'); ?>?</label>
-			<input type="checkbox" id="eab_event-bp-group_event-private_events" name="event_default[bp-group_event-private_events]" value="1" <?php print $private; ?> />
+	    	<label for="eab_event-psc-group_event-private_events"><?php _e('Gruppenveranstaltungen sind für Gruppen privat', 'eab'); ?>?</label>
+			<input type="checkbox" id="eab_event-psc-group_event-private_events" name="event_default[psc-group_event-private_events]" value="1" <?php print $private; ?> />
 			<span><?php echo $tips->add_tip(__('Wenn Du diese Option aktivierst, können Benutzer außerhalb Ihrer Gruppen Gruppenereignisse <b>nicht</b> sehen.', 'eab')); ?></span>
 	    </div>
 	    <div class="eab-settings-settings_item">
-	    	<label for="eab_event-bp-group_event-user_groups_only"><?php _e('Nur Gruppen anzeigen, zu denen der Benutzer gehört', 'eab'); ?>?</label>
-			<input type="checkbox" id="eab_event-bp-group_event-user_groups_only" name="event_default[bp-group_event-user_groups_only]" value="1" <?php print $user_groups_only; ?> />
+	    	<label for="eab_event-psc-group_event-user_groups_only"><?php _e('Nur Gruppen anzeigen, zu denen der Benutzer gehört', 'eab'); ?>?</label>
+			<input type="checkbox" id="eab_event-psc-group_event-user_groups_only" name="event_default[psc-group_event-user_groups_only]" value="1" <?php print $user_groups_only; ?> />
 			<span><?php echo $tips->add_tip(__('Wenn Du diese Option aktivierst, können Benutzer keine Ereignisse außerhalb der Gruppen zuweisen, zu denen sie bereits gehören.', 'eab')); ?></span>
 			<br />
-	    	<label for="eab_event-bp-group_event-user_groups_only-unless_superadmin"><?php _e('... außer für Superadministratoren', 'eab'); ?>?</label>
-			<input type="checkbox" id="eab_event-bp-group_event-user_groups_only-unless_superadmin" name="event_default[bp-group_event-user_groups_only-unless_superadmin]" value="1" <?php print $user_groups_only_unless_superadmin; ?> />
+	    	<label for="eab_event-psc-group_event-user_groups_only-unless_superadmin"><?php _e('... außer für Superadministratoren', 'eab'); ?>?</label>
+			<input type="checkbox" id="eab_event-psc-group_event-user_groups_only-unless_superadmin" name="event_default[psc-group_event-user_groups_only-unless_superadmin]" value="1" <?php print $user_groups_only_unless_superadmin; ?> />
 			<span><?php echo $tips->add_tip(__('Wenn Du diese Option aktivierst, können Deine Superadministratoren jeder Gruppe Ereignisse zuweisen.', 'eab')); ?></span>
 	    </div>
 	    <div class="eab-settings-settings_item">
-	    	<label for="eab_event-bp-group_event-private_events"><?php _e('Sende eine E-Mail an alle Gruppenmitglieder, wenn ein Ereignis erstellt oder bearbeitet wird', 'eab'); ?>?</label>
+	    	<label for="eab_event-psc-group_event-private_events"><?php _e('Sende eine E-Mail an alle Gruppenmitglieder, wenn ein Ereignis erstellt oder bearbeitet wird', 'eab'); ?>?</label>
 			<input type="checkbox" id="eab_event_bp_group_event_email_grp_member" name="event_default[eab_event_bp_group_event_email_grp_member]" value="1" <?php print $eab_event_bp_group_event_email_grp_member; ?> />
 	    </div>
 	</div>
@@ -226,10 +226,10 @@ class Eab_PSCommunity_GroupEvents {
 	}
 
 	function save_settings ($options) {
-		$options['bp-group_event-auto_join_groups'] = empty( $_POST['event_default']['bp-group_event-auto_join_groups'] ) ? 0 : $_POST['event_default']['bp-group_event-auto_join_groups'];
-		$options['bp-group_event-private_events'] = empty( $_POST['event_default']['bp-group_event-private_events'] ) ? 0 : $_POST['event_default']['bp-group_event-private_events'];
-		$options['bp-group_event-user_groups_only'] = empty( $_POST['event_default']['bp-group_event-user_groups_only'] ) ? 0 : $_POST['event_default']['bp-group_event-user_groups_only'];
-		$options['bp-group_event-user_groups_only-unless_superadmin'] = empty( $_POST['event_default']['bp-group_event-user_groups_only-unless_superadmin'] ) ? 0 : $_POST['event_default']['bp-group_event-user_groups_only-unless_superadmin'];
+		$options['psc-group_event-auto_join_groups'] = empty( $_POST['event_default']['psc-group_event-auto_join_groups'] ) ? 0 : $_POST['event_default']['psc-group_event-auto_join_groups'];
+		$options['psc-group_event-private_events'] = empty( $_POST['event_default']['psc-group_event-private_events'] ) ? 0 : $_POST['event_default']['psc-group_event-private_events'];
+		$options['psc-group_event-user_groups_only'] = empty( $_POST['event_default']['psc-group_event-user_groups_only'] ) ? 0 : $_POST['event_default']['psc-group_event-user_groups_only'];
+		$options['psc-group_event-user_groups_only-unless_superadmin'] = empty( $_POST['event_default']['psc-group_event-user_groups_only-unless_superadmin'] ) ? 0 : $_POST['event_default']['psc-group_event-user_groups_only-unless_superadmin'];
 		$options['eab_event_bp_group_event_email_grp_member'] = empty( $_POST['event_default']['eab_event_bp_group_event_email_grp_member'] ) ? 0 : $_POST['event_default']['eab_event_bp_group_event_email_grp_member'];
 		return $options;
 	}

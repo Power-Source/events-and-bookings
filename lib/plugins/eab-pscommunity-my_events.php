@@ -70,7 +70,7 @@ class Eab_PSCommunity_MyEvents {
 	function show_settings () {
 		$tips = new PSource_HelpTooltips();
 		$tips->set_icon_url( EAB_PLUGIN_URL . 'img/information.png' );
-		$premium = $this->_data->get_option('bp-my_events-premium_events');
+		$premium = $this->_data->get_option('psc-my_events-premium_events');
 		$options = array(
 			'' => __('Mach nichts Besonderes', 'eab'),
 			'hide' => __('Verberge', 'eab'),
@@ -81,11 +81,11 @@ class Eab_PSCommunity_MyEvents {
 	<h3 class="eab-hndle"><?php _e('Meine Ereignisse Einstellungen', 'eab'); ?></h3>
 	<div class="eab-inside">
 		<div class="eab-settings-settings_item" style="line-height:1.8em">
-	    	<label for="eab_event-bp-my_events-premium_events"><?php _e('Nicht bezahlte Premium-Events mit positiven RSPVs', 'eab'); ?>:</label>
+	    	<label for="eab_event-psc-my_events-premium_events"><?php _e('Nicht bezahlte Premium-Events mit positiven RSPVs', 'eab'); ?>:</label>
 	    	<?php foreach ($options as $value => $label) { ?>
 	    		<br />
-				<input type="radio" id="eab_event-bp-my_events-premium_events-<?php echo esc_attr($value); ?>" name="event_default[bp-my_events-premium_events]" value="<?php echo esc_attr($value); ?>" <?php checked($value, $premium); ?> />
-	    		<label for="eab_event-bp-my_events-premium_events-<?php echo esc_attr($value); ?>"><?php echo esc_html($label) ?></label>
+				<input type="radio" id="eab_event-psc-my_events-premium_events-<?php echo esc_attr($value); ?>" name="event_default[psc-my_events-premium_events]" value="<?php echo esc_attr($value); ?>" <?php checked($value, $premium); ?> />
+	    		<label for="eab_event-psc-my_events-premium_events-<?php echo esc_attr($value); ?>"><?php echo esc_html($label) ?></label>
 	    	<?php } ?>
 			<span><?php echo $tips->add_tip(__('Umgang mit nicht bezahlten Premium-Ereignissen in der Anzeige der Benutzerereignisliste.', 'eab')); ?></span>
 	    </div>
@@ -95,7 +95,7 @@ class Eab_PSCommunity_MyEvents {
 	}
 
 	function save_settings ($options) {
-		$options['bp-my_events-premium_events'] = $_POST['event_default']['bp-my_events-premium_events'];
+		$options['psc-my_events-premium_events'] = $_POST['event_default']['psc-my_events-premium_events'];
 		return $options;
 	}
 }
