@@ -94,6 +94,48 @@
     }
 
     /**
+     * Parses date input in both German (dd.mm.yyyy) and ISO (yyyy-mm-dd) format.
+     */
+    function _parse_date_input(value) {
+        if (!value) return false;
+        var raw = $.trim(value);
+        var parts = false;
+
+        if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) {
+            parts = raw.split('.');
+            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        }
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            parts = raw.split('-');
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        }
+
+        var parsed = new Date(raw);
+        if (isNaN(parsed.getTime())) return false;
+        return parsed;
+    }
+
+    function _to_iso_date(dateObj) {
+        var y = dateObj.getFullYear();
+        var m = ('0' + (dateObj.getMonth() + 1)).slice(-2);
+        var d = ('0' + dateObj.getDate()).slice(-2);
+        return y + '-' + m + '-' + d;
+    }
+
+    function _supports_native_date_input() {
+        var input = document.createElement('input');
+        input.setAttribute('type', 'date');
+        return input.type === 'date';
+    }
+
+    function _iso_to_de(value) {
+        if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+        var p = value.split('-');
+        return p[2] + '.' + p[1] + '.' + p[0];
+    }
+
+    /**
      * Manage no start and end time checkboxes
      */
     jQuery(document).ready(function(e) {
@@ -131,7 +173,8 @@
             $start_date = $("#eab-events-fpe-start_date");
 
         if (!$start_date.val()) return missing_datetime_error($start_date);
-        var start = new Date($start_date.val());
+        var start = _parse_date_input($start_date.val());
+        if (!start) return invalid_datetime_error($start_date);
 
         var start_time_parts = [];
         var end_time_parts = [];
@@ -149,7 +192,8 @@
 
         var $end_date = $("#eab-events-fpe-end_date");
         if (!$end_date.val()) return missing_datetime_error($end_date);
-        var end = new Date($end_date.val());
+        var end = _parse_date_input($end_date.val());
+        if (!end) return invalid_datetime_error($end_date);
 
 
         if ($('#eab-events-fpe-toggle_time__end').not(':checked')) {
@@ -179,6 +223,11 @@
 
         modified_start_time = modified_start_time.replace(/ /g, '');
         modified_end_time = modified_end_time.replace(/ /g, '');
+        if (!modified_start_time) modified_start_time = '00:00';
+        if (!modified_end_time) modified_end_time = '00:00';
+
+        var start_iso = _to_iso_date(start);
+        var end_iso = _to_iso_date(end);
 
         $('input[name="eab-events-fpe-categories[]"]:checked').each(function() {
             selected_categories.push($(this).val());
@@ -188,8 +237,8 @@
             "id": $("#eab-events-fpe-event_id").val(),
             "title": $("#eab-events-fpe-event_title").val(),
             "content": content,
-            "start": $start_date.val() + ' ' + modified_start_time,
-            "end": $end_date.val() + ' ' + modified_end_time,
+            "start": start_iso + ' ' + modified_start_time,
+            "end": end_iso + ' ' + modified_end_time,
             "no_start_time": $('#eab-events-fpe-toggle_time__start').is(':checked'),
             "no_end_time": $('#eab-events-fpe-toggle_time__end').is(':checked'),
             "venue": $("#eab-events-fpe-venue").val(),
@@ -245,19 +294,29 @@
     // Init
     $(function() {
 
+        // Fallback for browsers without native date picker support.
+        if (!_supports_native_date_input()) {
+            $("#eab-events-fpe-start_date, #eab-events-fpe-end_date").each(function() {
+                var $el = $(this);
+                $el.attr('type', 'text');
+                $el.attr('placeholder', 'TT.MM.JJJJ');
+                $el.attr('inputmode', 'numeric');
+                $el.attr('autocomplete', 'off');
+                $el.attr('pattern', '\\d{2}\\.\\d{2}\\.\\d{4}');
+                $el.attr('title', 'Bitte Datum als TT.MM.JJJJ eingeben');
+
+                var current = $.trim($el.val());
+                if (current) {
+                    $el.val(_iso_to_de(current));
+                }
+            });
+        }
+
         $("#fpe-editor").append($("#fpe-editor-root"));
         $("#fpe-editor-root").show();
 
         // Toggle RSVPs
         $("#eab-events-fpe-toggle_rsvps").on("click", toggle_rsvps);
-
-        // Init date pickers
-        $("#eab-events-fpe-start_date, #eab-events-fpe-end_date").datepicker({
-            minDate: 0,
-            dateFormat: "yy-mm-dd",
-            changeMonth: true,
-            changeYear: true
-        });
 
         // Init Fee toggling
         if ($("#eab-events-fpe-is_premium")) {

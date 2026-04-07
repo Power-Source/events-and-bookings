@@ -425,7 +425,7 @@ class Eab_Events_FrontPageEditing {
 				<legend><?php _e('<h3>Das Event beginnt:</h3>', 'eab') ?></legend>
 				<div class="eab-events-fpe-meta_box_sub_item">
 					<label class="date-title"><?php _e('Datum:', 'eab'); ?></label>
-					<input type="text" name="" id="eab-events-fpe-start_date" value="<?php echo date('Y-m-d', $start); ?>" size="10" />
+					<input type="date" lang="de" name="" id="eab-events-fpe-start_date" value="<?php echo date('Y-m-d', $start); ?>" />
 				</div>
 				<div class="eab-events-fpe-meta_box_sub_item">
 					<div class="eab-events-fpe_wrap_time_start <?php echo $has_no_start_time ? 'hide_time_option' : '' ?>"  >
@@ -445,7 +445,7 @@ class Eab_Events_FrontPageEditing {
 				<legend><?php _e('<h3>Das Event endet:</h3>', 'eab') ?></legend>
 				<div class="eab-events-fpe-meta_box_sub_item">
 					<label class="date-title"><?php _e('Datum:', 'eab'); ?></label>
-					<input type="text" name="" id="eab-events-fpe-end_date" value="<?php echo date('Y-m-d', $end); ?>" size="10" />
+					<input type="date" lang="de" name="" id="eab-events-fpe-end_date" value="<?php echo date('Y-m-d', $end); ?>" />
 				</div>
 				<div class="eab-events-fpe-meta_box_sub_item">
 					<div class="eab-events-fpe_wrap_time_end <?php echo $has_no_end_time ? 'hide_time_option' : '' ?>">
@@ -636,13 +636,6 @@ class Eab_Events_FrontPageEditing {
 		// Initialize upload functionality
 		echo '<script type="text/javascript">
 			jQuery(document).ready(function($) {
-				// Initialize datepicker
-				$("#eab-events-fpe-start_date, #eab-events-fpe-end_date").datepicker({
-					dateFormat: "yy-mm-dd",
-					changeMonth: true,
-					changeYear: true
-				});
-				
 				// Wait for wp.media to load
 				setTimeout(function() {
 					initMediaUploader();
@@ -760,10 +753,9 @@ class Eab_Events_FrontPageEditing {
 
 	public function _enqueue_dependencies () {
 		wp_enqueue_style('eab-events-fpe', plugins_url(basename(EAB_PLUGIN_DIR) . "/css/eab-events-fpe.min.css"));
-		wp_enqueue_style('eab_jquery_ui');
+		wp_add_inline_style('eab-events-fpe', '#eab-events-fpe-start_date,#eab-events-fpe-end_date{min-height:36px;}');
 
 		wp_enqueue_script('jquery');
-		wp_enqueue_script('jquery-ui-datepicker');
 		
 		// Enqueue media scripts for the modern Media Library
 		if (current_user_can('upload_files')) {
@@ -774,11 +766,11 @@ class Eab_Events_FrontPageEditing {
 			wp_enqueue_script('media-editor');
 			
 			wp_enqueue_script('eab-events-fpe', plugins_url(basename(EAB_PLUGIN_DIR) . "/js/eab-events-fpe.js"), 
-				array('jquery', 'jquery-ui-datepicker', 'media-upload', 'media-models', 'media-views', 'media-editor'), 
+				array('jquery', 'media-upload', 'media-models', 'media-views', 'media-editor'), 
 				'1.0', true);
 		} else {
 			wp_enqueue_script('eab-events-fpe', plugins_url(basename(EAB_PLUGIN_DIR) . "/js/eab-events-fpe.js"), 
-				array('jquery', 'jquery-ui-datepicker'), '1.0', true);
+				array('jquery'), '1.0', true);
 		}
 		
 		wp_localize_script('eab-events-fpe', 'l10nFpe', array(
@@ -793,8 +785,6 @@ class Eab_Events_FrontPageEditing {
 			'ajax_url' => admin_url('admin-ajax.php'),
 			'nonce' => wp_create_nonce('eab_fpe_upload_nonce')
 		));
-		
-		wp_enqueue_script('eab_jquery_ui');
 
 		do_action('eab-events-fpe-enqueue_dependencies');
 	}

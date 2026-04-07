@@ -32,6 +32,12 @@ class Eab_PSCommunity_GroupEvents {
 		add_action('admin_notices', array($this, 'show_nags'));
 		add_action('eab-settings-after_plugin_settings', array($this, 'show_settings'));
 		add_filter('eab-settings-before_save', array($this, 'save_settings'));
+		add_action('wp_enqueue_scripts', array($this, 'enqueue_group_tab_assets'), 30);
+		
+		// Ownership: group-events tab is registered and rendered by the Events plugin addon.
+		// PS Community only exposes the host tab system.
+		add_filter('cpc_group_tabs', array($this, 'add_group_tab'), 20, 3);
+		add_filter('cpc_group_tab_content_group-events', array($this, 'render_group_tab_content'), 20, 3);
 		
 		if ($this->_data->get_option('psc-group_event-auto_join_groups')) {
 			add_action('psource_event_booking_yes', array($this, 'auto_join_group'), 10, 2);
@@ -62,6 +68,65 @@ class Eab_PSCommunity_GroupEvents {
 		
 		add_action('eab-widgets-upcoming-after_event', array($this, 'widget_event_group'), 10, 2);
 		add_action('eab-widgets-popular-after_event', array($this, 'widget_event_group'), 10, 2);
+	}
+
+	public function enqueue_group_tab_assets () {
+		$active_tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+		if ($active_tab !== 'group-events') {
+			return;
+		}
+
+		if (!shortcode_exists('eab_event_editor')) {
+			return;
+		}
+
+		wp_enqueue_style('eab-events-fpe', plugins_url(basename(EAB_PLUGIN_DIR) . '/css/eab-events-fpe.min.css'));
+		wp_add_inline_style('eab-events-fpe', '#eab-events-fpe-start_date,#eab-events-fpe-end_date{min-height:36px;}');
+
+		wp_enqueue_script('jquery');
+
+		if (current_user_can('upload_files')) {
+			wp_enqueue_media();
+			wp_enqueue_script('media-upload');
+			wp_enqueue_script('media-models');
+			wp_enqueue_script('media-views');
+			wp_enqueue_script('media-editor');
+
+			wp_enqueue_script(
+				'eab-events-fpe',
+				plugins_url(basename(EAB_PLUGIN_DIR) . '/js/eab-events-fpe.js'),
+				array('jquery', 'media-upload', 'media-models', 'media-views', 'media-editor'),
+				'1.0',
+				true
+			);
+		} else {
+			wp_enqueue_script(
+				'eab-events-fpe',
+				plugins_url(basename(EAB_PLUGIN_DIR) . '/js/eab-events-fpe.js'),
+				array('jquery'),
+				'1.0',
+				true
+			);
+		}
+
+		wp_localize_script('eab-events-fpe', 'l10nFpe', array(
+			'mising_time_date' => __('Bitte lege sowohl Start- als auch Enddaten und -zeiten fest', 'eab'),
+			'check_time_date' => __('Bitte überprüfe Deine Zeit- und Datumseinstellungen', 'eab'),
+			'general_error' => __('Fehler', 'eab'),
+			'missing_id' => __('Speichern fehlgeschlagen', 'eab'),
+			'all_good' => __('Alles Super!', 'eab'),
+			'base_url' => site_url(),
+			'media_title' => __('Veranstaltungsbild auswählen', 'eab'),
+			'media_button' => __('Bild verwenden', 'eab'),
+			'ajax_url' => admin_url('admin-ajax.php'),
+			'nonce' => wp_create_nonce('eab_fpe_upload_nonce')
+		));
+
+		// Keep the editor compact within the group tab.
+		$compact_css = '.eab-group-events-editor{margin-top:12px;padding:12px;border:1px solid #e2e5e9;border-radius:8px;background:#fff}.eab-group-events-editor #eab-events-fpe-meta_info{gap:8px}.eab-group-events-editor .eab-events-fpe-col_wrapper{margin:.2% 0}.eab-group-events-editor .eab-events-fpe-meta_box{padding:.35rem}.eab-group-events-editor-toggle summary{cursor:pointer;font-weight:600;margin-top:10px}';
+		wp_add_inline_style('eab-events-fpe', $compact_css);
+
+		do_action('eab-events-fpe-enqueue_dependencies');
 	}
 
 	function widget_instance_defaults ($defaults) {
@@ -170,6 +235,76 @@ class Eab_PSCommunity_GroupEvents {
 		if (!cpc_is_group_member((int)$user_id, $group_id, get_current_blog_id())) {
 			cpc_add_group_member((int)$user_id, $group_id, 'member', 'active', get_current_blog_id());
 		}
+	}
+	
+	public function add_group_tab($tabs, $group_id, $user_id) {
+		// Only show if group calendar is enabled
+		if (function_exists('cpc_events_allow_group_calendar') && !cpc_events_allow_group_calendar()) {
+			return $tabs;
+		}
+
+		$group_id = (int)$group_id;
+		if ($group_id <= 0) {
+			return $tabs;
+		}
+
+		// Count group events for this group
+		$count = (int)(new WP_Query(array(
+			'post_type' => Eab_EventModel::POST_TYPE,
+			'post_status' => 'publish',
+			'meta_key' => 'eab_event-bp-group_event',
+			'meta_value' => $group_id,
+			'posts_per_page' => 1,
+			'no_found_rows' => false,
+			'fields' => 'ids',
+		)))->found_posts;
+
+		$label = __('Events', 'eab');
+		if ($count > 0) {
+			$label .= ' (' . $count . ')';
+		}
+
+		$tabs['group-events'] = array(
+			'label' => $label,
+			'icon' => 'calendar-alt',
+			'priority' => 25,
+		);
+
+		return $tabs;
+	}
+	
+	public function render_group_tab_content($html, $group_id, $shortcode_atts) {
+		$group_id = (int)$group_id;
+		if ($group_id <= 0) {
+			return '<p>' . esc_html__('Gruppe nicht gefunden.', 'eab') . '</p>';
+		}
+
+		if (function_exists('cpc_can_view_group') && !cpc_can_view_group(get_current_user_id(), $group_id)) {
+			return '<p>' . esc_html__('Keine Berechtigung.', 'eab') . '</p>';
+		}
+
+		$archive_html = do_shortcode('[eab_group_archives groups="' . (int)$group_id . '"]');
+		if (trim(wp_strip_all_tags((string)$archive_html)) === '') {
+			$archive_html = '<p class="eab-group-events-empty">' . esc_html__('Noch keine Gruppen-Events vorhanden.', 'eab') . '</p>';
+		}
+
+		$output = '<div class="eab-group-events-tab">';
+		$output .= '<div class="eab-group-events-archive">';
+		$output .= $archive_html;
+		$output .= '</div>';
+
+		// Keep original PS Events editor available, but collapsed by default.
+		if (shortcode_exists('eab_event_editor')) {
+			$output .= '<details class="eab-group-events-editor-toggle">';
+			$output .= '<summary>' . esc_html__('Neues Gruppen-Event erstellen', 'eab') . '</summary>';
+			$output .= '<div class="eab-group-events-editor">';
+			$output .= do_shortcode('[eab_event_editor]');
+			$output .= '</div>';
+			$output .= '</details>';
+		}
+
+		$output .= '</div>';
+		return $output;
 	}
 	
 	function show_nags () {
