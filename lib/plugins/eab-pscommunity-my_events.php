@@ -29,6 +29,54 @@ class Eab_PSCommunity_MyEvents {
 		add_action('admin_notices', array($this, 'show_nags'));
 		add_action('eab-settings-after_plugin_settings', array($this, 'show_settings'));
 		add_filter('eab-settings-before_save', array($this, 'save_settings'));
+		
+		// Register profile tab for My Events
+		add_filter('cpc_profile_tabs', array($this, 'add_profile_tab'), 20, 3);
+		add_filter('cpc_profile_tab_content', array($this, 'render_profile_tab_content'), 20, 4);
+	}
+	
+	public function add_profile_tab($tabs, $user_id, $viewer_id) {
+		// Only show if user calendar is enabled
+		if (function_exists('cpc_events_allow_user_calendar') && !cpc_events_allow_user_calendar()) {
+			return $tabs;
+		}
+
+		$count = (int)(new WP_Query(array(
+			'post_type' => Eab_EventModel::POST_TYPE,
+			'post_status' => 'publish',
+			'author' => (int)$user_id,
+			'posts_per_page' => 1,
+			'no_found_rows' => false,
+			'fields' => 'ids',
+		)))->found_posts;
+
+		$label = __('Events', 'eab');
+		if ($count > 0) {
+			$label .= ' (' . $count . ')';
+		}
+
+		$tabs['my-events'] = array(
+			'label' => $label,
+			'icon' => 'calendar-alt',
+			'priority' => 27,
+		);
+
+		return $tabs;
+	}
+	
+	public function render_profile_tab_content($html, $active_tab, $user_id, $shortcode_atts) {
+		if ($active_tab !== 'my-events') {
+			return $html;
+		}
+
+		$user_id = (int)$user_id;
+		if (!$user_id) {
+			return '<p>' . esc_html__('Benutzer nicht gefunden.', 'eab') . '</p>';
+		}
+
+		return '<div class="cpc-events-my-events">' . 
+			do_shortcode('[eab_my_events user="' . (int)$user_id . '" show_titles="yes" sections="organized,yes,maybe,no"]') . 
+			'</div>';
 	}
 	
 	function show_nags () {
