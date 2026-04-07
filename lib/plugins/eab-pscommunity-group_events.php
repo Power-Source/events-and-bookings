@@ -80,8 +80,8 @@ class Eab_PSCommunity_GroupEvents {
 			return;
 		}
 
-		wp_enqueue_style('eab-events-fpe', plugins_url(basename(EAB_PLUGIN_DIR) . '/css/eab-events-fpe.min.css'));
-		wp_add_inline_style('eab-events-fpe', '#eab-events-fpe-start_date,#eab-events-fpe-end_date{min-height:36px;}');
+		wp_enqueue_style('eab-events-fpe', EAB_PLUGIN_URL . 'css/eab-events-fpe.min.css');
+		wp_add_inline_style('eab-events-fpe', '#eab-events-fpe-start_date,#eab-events-fpe-end_date{min-height:36px;}.eab-group-events-editor details,.eab-group-events-editor summary{display:block;}');
 
 		wp_enqueue_script('jquery');
 
@@ -94,7 +94,7 @@ class Eab_PSCommunity_GroupEvents {
 
 			wp_enqueue_script(
 				'eab-events-fpe',
-				plugins_url(basename(EAB_PLUGIN_DIR) . '/js/eab-events-fpe.js'),
+				EAB_PLUGIN_URL . 'js/eab-events-fpe.js',
 				array('jquery', 'media-upload', 'media-models', 'media-views', 'media-editor'),
 				'1.0',
 				true
@@ -102,7 +102,7 @@ class Eab_PSCommunity_GroupEvents {
 		} else {
 			wp_enqueue_script(
 				'eab-events-fpe',
-				plugins_url(basename(EAB_PLUGIN_DIR) . '/js/eab-events-fpe.js'),
+				EAB_PLUGIN_URL . 'js/eab-events-fpe.js',
 				array('jquery'),
 				'1.0',
 				true
@@ -288,7 +288,10 @@ class Eab_PSCommunity_GroupEvents {
 			$archive_html = '<p class="eab-group-events-empty">' . esc_html__('Noch keine Gruppen-Events vorhanden.', 'eab') . '</p>';
 		}
 
-		$output = '<div class="eab-group-events-tab">';
+		$critical_css = '.eab-group-events-tab .eab-group-events-editor{margin-top:12px;padding:12px;border:1px solid #e2e5e9;border-radius:8px;background:#fff}.eab-group-events-tab #eab-events-fpe{max-width:100%}.eab-group-events-tab #eab-events-fpe-meta_info{display:flex;flex-wrap:wrap;gap:12px}.eab-group-events-tab .eab-events-fpe-col_wrapper{flex:1 1 320px;min-width:280px}.eab-group-events-tab .eab-events-fpe-meta_box{padding:8px;border:1px solid #ddd;border-radius:6px}.eab-group-events-tab #eab-events-fpe-start_date,.eab-group-events-tab #eab-events-fpe-end_date,.eab-group-events-tab #eab-events-fpe-start_time,.eab-group-events-tab #eab-events-fpe-end_time,.eab-group-events-tab #eab-events-fpe-event_title,.eab-group-events-tab #eab-events-fpe-venue{max-width:100%;width:100%;box-sizing:border-box}.eab-group-events-tab .eab-group-events-editor-toggle summary{cursor:pointer;font-weight:600}';
+
+		$output = '<style id="eab-group-events-critical-style">' . $critical_css . '</style>';
+		$output .= '<div class="eab-group-events-tab">';
 		$output .= '<div class="eab-group-events-archive">';
 		$output .= $archive_html;
 		$output .= '</div>';
