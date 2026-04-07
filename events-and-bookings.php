@@ -191,7 +191,7 @@ class Eab_EventsHub {
 	}
 
 	function respawn_recurring_instances ( $post ) {
-		if ( empty( $post->post_type ) || Eab_EventModel::POST_TYPE !== $post->post_type )  { 
+		if ( !( $post instanceof WP_Post ) || Eab_EventModel::POST_TYPE !== $post->post_type )  { 
 			return false;
 		}
 		$event = new Eab_EventModel( $post );
@@ -441,7 +441,7 @@ class Eab_EventsHub {
     function agm_google_maps_post_meta_address($location) {
 		global $post;
 
-		if ( !$location && $post->post_type == 'psource_event' ) {
+		if ( !$location && $post instanceof WP_Post && $post->post_type == 'psource_event' ) {
 		    $meta = get_post_custom( $post->ID );
 
 		    $venue = '';
@@ -548,7 +548,7 @@ class Eab_EventsHub {
 
     function archive_content( $content ) {
 		global $post;
-		if ( 'psource_event' != $post->post_type ) { 
+		if ( !( $post instanceof WP_Post ) || 'psource_event' != $post->post_type ) { 
 			return $content;
 		}
 		return Eab_Template::get_archive_content( $post );
@@ -633,7 +633,7 @@ class Eab_EventsHub {
 
     function single_content( $content ) {
 		global $post;
-		if ('psource_event' != $post->post_type) {
+		if ( !( $post instanceof WP_Post ) || 'psource_event' != $post->post_type ) {
 			return $content;
 		}
 		return Eab_Template::get_single_content( $post, $content );
@@ -1163,7 +1163,7 @@ class Eab_EventsHub {
 			return;
 		}
 
-		$is_valid_post_type = ( Eab_EventModel::POST_TYPE == $post->post_type );
+		$is_valid_post_type = ( $post instanceof WP_Post && Eab_EventModel::POST_TYPE == $post->post_type );
 
 		if ( $is_valid_post_type ) {
 			do_action( 'eab-event_meta-save_meta', $post_id );
@@ -1300,7 +1300,7 @@ class Eab_EventsHub {
 		}
 
     	$post = get_post();
-    	if ( empty( $post->post_type ) || Eab_EventModel::POST_TYPE !== $post->post_type ) {
+		if ( !( $post instanceof WP_Post ) || Eab_EventModel::POST_TYPE !== $post->post_type ) {
 			return $messages;
 		}
 
@@ -1340,7 +1340,7 @@ class Eab_EventsHub {
 		    '%event_monthnum%'
 		);
 
-		if ( $post && $post->post_type == 'psource_event' && '' != $permalink ) {
+		if ( $post instanceof WP_Post && $post->post_type == 'psource_event' && '' != $permalink ) {
 		    $starts = get_post_meta( $post_id, 'psource_event_start' );
 		    $start 	= isset( $starts[0] )
 		    	? strtotime( $starts[0] )
@@ -1425,7 +1425,7 @@ class Eab_EventsHub {
      * @return array
      */
     public function manage_post_actions ( $actions, $post ) {
-    	if ( empty( $post->post_type ) ) {
+	    	if ( !( $post instanceof WP_Post ) ) {
 			return $actions;
 		}
     	return Eab_EventModel::POST_TYPE !== $post->post_type

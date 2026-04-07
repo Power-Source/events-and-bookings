@@ -172,7 +172,7 @@ function eab_ordering_date_ordering_direction_cb() {
 function eab_to_agm__ensure_subscribers_maps () {
 	global $post;
 	if (!class_exists('AgmAdminMaps')) return false;
-	if (empty($post->post_type)) return false;
+	if (!($post instanceof WP_Post)) return false;
 	if (Eab_EventModel::POST_TYPE != $post->post_type) return false;
 	echo <<<EO_EAB_AGM_SUBSCRIBER_SCRIPT
 <script type="text/javascript">
@@ -205,7 +205,7 @@ add_filter('eab-render-css_classes', 'eab__event_categories_to_classes', 10, 2);
 if (!(defined('EAB_SKIP_FEED_DATES_INJECTION') && EAB_SKIP_FEED_DATES_INJECTION)) {
 	function eab_to_feed__add_feed_event_dates ($content) {
     	global $post;
-    	if (empty($post->post_type) || Eab_EventModel::POST_TYPE != $post->post_type) return $content;
+	    if (!($post instanceof WP_Post) || Eab_EventModel::POST_TYPE != $post->post_type) return $content;
     	return $content . '<br />' . eab_call_template('get_event_dates', $post);
     }
 	add_filter('the_excerpt_rss', 'eab_to_feed__add_feed_event_dates');
@@ -221,6 +221,7 @@ if (!(defined('EAB_SKIP_FEED_DATES_INJECTION') && EAB_SKIP_FEED_DATES_INJECTION)
 if (!(defined('EAB_SKIP_DEFAULT_ULTIMATE_FACEBOOK_EVENT_FILTERING') && EAB_SKIP_DEFAULT_ULTIMATE_FACEBOOK_EVENT_FILTERING)) {
 	function eab_to_wdfb__spawn_event_model ($post) {
 		if (!class_exists('Eab_EventModel')) return false;
+		if (!($post instanceof WP_Post)) return false;
 		if (Eab_EventModel::POST_TYPE != $post->post_type) return false;
 		return new Eab_EventModel($post);
 	}

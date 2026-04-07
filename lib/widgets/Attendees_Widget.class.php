@@ -21,7 +21,7 @@ class Eab_Attendees_Widget extends Eab_Widget {
 		$before_title  = isset( $args['before_title'] )  ? $args['before_title']  : '';
 		$after_title   = isset( $args['after_title'] )   ? $args['after_title']   : '';
 
-		if ( $post->post_type != 'psource_event') {
+		if ( !( $post instanceof WP_Post ) || $post->post_type != 'psource_event') {
 		    return;
 		}
 	
