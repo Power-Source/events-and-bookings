@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: PS Events
-Plugin URI: https://psource.eimen.net/wiki/ps-events-dokumentation/
+Plugin URI: https://psource.eimen.net/psource/ps-events/
 Description: PS Events bietet Dir ein flexibles System zur Organisation von Partys, Abendessen, Spendenaktionen – was auch immer Du Dir vorstellen kannst.
 Author: PSOURCE
 Text Domain: eab
