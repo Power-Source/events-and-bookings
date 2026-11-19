@@ -43,4 +43,8 @@ Multisite steht im [Handbuch](handbuch/README.md).
 ## Datums- und Zeiteingabe
 
 Der Veranstaltungseditor nutzt native Datums- und Uhrzeitfelder des Browsers.
-PS Events benötigt dafür weder jQuery UI noch einen externen Dienst.
+Mehrere Termine und Wiederholungen werden mit lokal eingebundenem Vanilla
+JavaScript gesteuert. PS Events lädt dafür weder jQuery UI noch einen externen
+Dienst.
+
+![Wochenserie im Veranstaltungseditor konfigurieren](handbuch/bilder/wochenserie.png)

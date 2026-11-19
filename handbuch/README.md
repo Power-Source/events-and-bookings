@@ -76,7 +76,7 @@ eingerichtet.
 
 Im Screenshot ist der Editor mit Veranstaltungsdetails zu sehen:
 
-![Veranstaltungseditor mit Titel, Ort und Datum](bilder/veranstaltung-editor.png)
+![Veranstaltungsdetails mit Ort, Datum und Uhrzeit](bilder/veranstaltung-editor.png)
 
 ### Wiederkehrende Termine
 
@@ -85,6 +85,8 @@ zugehörige Termine für den gewählten Zeitraum. Beim Veröffentlichen werden d
 Instanzen angelegt; beim Löschen oder Verschieben des Hauptereignisses in den
 Papierkorb werden sie mitverwaltet. Prüfe nach dem Speichern die im Archiv
 angezeigten Termine.
+
+![Wöchentliche Wiederholung mit Montag und Mittwoch und einer Dauer von 27:15 Stunden](bilder/wochenserie.png)
 
 ## RSVPs und Teilnehmende verwalten
 
@@ -180,6 +182,15 @@ PS Events kann in WordPress-Multisite verwendet werden. Veranstaltungen und
 Buchungen werden pro Website gespeichert. Eine Netzwerkaktivierung bedeutet
 daher nicht automatisch, dass eine gemeinsame netzwerkweite Veranstaltungsliste
 angezeigt wird.
+
+Für eine zentrale Aktivierung findest du PS Events unter **Meine Websites →
+Netzwerkverwaltung → Plugins**. Soll PS Events nur auf einer einzelnen
+Website laufen, aktiviere es stattdessen in deren eigener Plugin-Liste.
+
+![Eintrag für PS Events in der Netzwerk-Pluginliste mit der Aktion „Netzwerkweit aktivieren“](bilder/netzwerk-plugins.png)
+
+*In der lokalen Demo blieb PS Events nur auf MarketPress Demo aktiv. Die
+netzwerkweite Ausgabe wurde nicht praktisch geprüft.*
 
 Für die netzwerkweite Sammlung benötigt PS Events das **Multisite
 Beitragsindex**-Plugin (Post Indexer), das Beiträge aus den Websites im
