@@ -105,6 +105,15 @@ if (!(defined('EAB_SKIP_FORCED_META_ID_ORDERING') && EAB_SKIP_FORCED_META_ID_ORD
 		return $check;
 	}
 	add_filter('get_post_metadata', '_eab_filter_meta_query', 10, 4);
+
+	function _eab_invalidate_sorted_meta_cache ($meta_ids, $object_id, $meta_key) {
+		if (preg_match('/^psource_event_(.*?)(?:start|end)$/', $meta_key)) {
+			wp_cache_delete($object_id, 'post_meta_sorted');
+		}
+	}
+	add_action('added_post_meta', '_eab_invalidate_sorted_meta_cache', 10, 3);
+	add_action('updated_post_meta', '_eab_invalidate_sorted_meta_cache', 10, 3);
+	add_action('deleted_post_meta', '_eab_invalidate_sorted_meta_cache', 10, 3);
 }
 // End Core WP postmeta filtering
 

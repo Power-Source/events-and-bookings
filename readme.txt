@@ -76,8 +76,16 @@ Begeistere die Teilnehmer für Deine Veranstaltung. Verbreite das Wort mit autom
 
 == ChangeLog ==
 
-= 1.0.1 =
+= 1.0.2 =
+* Fix: PHP Warning "Undefined variable $html" im Widget lib/widgets/NetworkUpcoming_Widget.class.php behoben, indem der Formular-HTML-Accumulator vor der Verwendung initialisiert wird
+* Fix: Das Teilnahmeformular sendet die angemeldete Benutzer-ID statt der Buchungs-ID. Reguläre Teilnehmer können dadurch erstmals zusagen und ihre Antwort später ändern, ohne an der Identitätsprüfung zu scheitern.
+* Fix: Der nach Metadaten-ID sortierte Datumscache wird beim Hinzufügen, Ändern und Löschen von Terminzeiten geleert. Veranstaltungsansichten und Integrationen erhalten dadurch keine veralteten Zeiten.
+* Fix: Sortierung und Vorschauzeitraum des Veranstaltungskarten-Shortcodes werden korrekt übernommen.
+* Neu: Die manuelle Überweisung unterstützt Kontoinhaber, IBAN sowie optionale BIC-, Banknamen- und Referenzpräfix-Angaben.
+* Neu: Für gültige EUR-Zahlungen wird ein lokaler EPC-QR-Code mit einer buchungsbezogenen Überweisungsreferenz angezeigt.
+* Verbesserung: Bestehende Erinnerungs-E-Mails an unbezahlte Teilnehmer enthalten die Überweisungsdaten und einen eingebetteten, mailclient-kompatiblen EPC-QR-Code für ausstehende manuelle Zahlungen.
 
+= 1.0.1 =
 * Fix: PHP 8 Warning "Attempt to read property post_type on null" in agm_google_maps_post_meta_address und weiteren Hooks behoben
 * Compat: Alle direkten $post->post_type Zugriffe mit instanceof WP_Post Guard abgesichert (archive_content, single_content, save_event_meta, respawn_recurring_instances, manage_post_actions, handle_post_updated_messages, post_type_link)
 * Compat: Gleiche Guards in lib/default_filters.php, lib/widgets/Attendees_Widget.class.php und lib/plugins/lib/class_eab_mp_bridge.php
@@ -87,5 +95,4 @@ Begeistere die Teilnehmer für Deine Veranstaltung. Verbreite das Wort mit autom
 * Compatibility: Verbesserungen fuer PHP 8+
 
 = 1.0.0 =
-
 * Release

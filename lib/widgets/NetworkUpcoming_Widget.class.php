@@ -11,6 +11,7 @@ class Eab_NetworkUpcoming_Widget extends Eab_Widget {
 	}
 	
 	function form ($instance) {
+		$html = '';
 		$title = isset( $instance['title'] ) ? esc_attr($instance['title'])  : '';
 		$limit = isset( $instance['limit'] ) ? esc_attr($instance['limit']) : '';
 		

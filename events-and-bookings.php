@@ -1590,9 +1590,11 @@ if (
 	! isset( $_POST['newcontent'] ) && 
 	! ( function_exists( 'get_current_sceen' ) && 'theme-editor' == get_current_sceen()->id )
 ) {
-	$sess_id = session_id();
-	if ( empty( $sess_id ) ) {
-		@session_start();
+	if ( ! headers_sent() ) {
+		$sess_id = session_id();
+		if ( empty( $sess_id ) ) {
+			@session_start();
+		}
 	}
 
 }

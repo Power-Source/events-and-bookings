@@ -335,8 +335,8 @@ if ( !class_exists( 'Pointer_Tutorial' ) ) {
 			add_action( 'admin_footer-'.$current_page[0]['hook'], array( &$this, 'print_footer_list' ) );
 	
 			// Add pointers script and style to queue
-			wp_enqueue_style( 'wp-pointer' );
-			wp_enqueue_script( 'wp-pointer' );
+			wp_enqueue_style( 'eab-pointer-polyfill', plugins_url( 'pointer-polyfill.css', __FILE__ ), array(), '1.0.0' );
+			wp_enqueue_script( 'eab-pointer-polyfill', plugins_url( 'pointer-polyfill.js', __FILE__ ), array( 'jquery' ), '1.0.0', true );
 		}
 		
 		/**

@@ -80,7 +80,7 @@ class Eab_Events_EventCountdown {
 	 * Register jQuery countdown
 	 */		
 	function register_scripts() {
-		wp_register_script('jquery-countdown',EAB_PLUGIN_URL.'js/jquery.countdown.min.js',array('jquery','jquery-ui-widget'));
+		wp_register_script('jquery-countdown',EAB_PLUGIN_URL.'js/jquery.countdown.min.js',array('jquery'));
 	}
 
 	/**

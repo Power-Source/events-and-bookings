@@ -521,7 +521,7 @@ class Eab_Template {
 
 				$content .= '<form action="' . esc_url( get_permalink($event->get_id()) ) . '" method="post" id="eab_booking_form">';
 				$content .= '<input type="hidden" name="event_id" value="' . intval( $event->get_id() ) . '" />';
-				$content .= '<input type="hidden" name="user_id" value="' . intval( $booking_id ) . '" />';
+				$content .= '<input type="hidden" name="user_id" value="' . get_current_user_id() . '" />';
 				$content .= wp_nonce_field( 'event_rsvp_nonce', '_wpnonce', true, false );
 				$content .= apply_filters('eab-rsvps-button-no',
 					'<input class="' .

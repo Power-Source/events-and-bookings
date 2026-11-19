@@ -126,7 +126,12 @@ function send_email_non_paid_members_callback() {
 			wp_mail(
 				$user->user_email,
 				$codec->expand( $subject, Eab_Macro_Codec::FILTER_TITLE ),
-				$codec->expand( $body, Eab_Macro_Codec::FILTER_BODY ),
+				apply_filters(
+					'eab-rsvps-non_paid-email-body',
+					$codec->expand( $body, Eab_Macro_Codec::FILTER_BODY ),
+					$event_id,
+					$user_id
+				),
 				$headers
 			);
 			remove_filter( 'wp_mail_content_type', array( $this, 'email_charset' ) );

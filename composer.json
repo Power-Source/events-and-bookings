@@ -1,0 +1,10 @@
+{
+  "name": "psource/events-and-bookings",
+  "description": "Events and Bookings WordPress plugin dependencies",
+  "require": {
+    "chillerlan/php-qrcode": "^5.0"
+  },
+  "config": {
+    "autoloader-suffix": "EabManualPaymentsQr"
+  }
+}
