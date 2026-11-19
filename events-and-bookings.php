@@ -237,7 +237,6 @@ class Eab_EventsHub {
 		$wp_rewrite->add_permastruct( 'psource_event', $event_structure, false );
 	
 		wp_register_script( 'eab_event_js', EAB_PLUGIN_URL . 'js/eab-event.js', array('jquery'), self::CURRENT_VERSION );
-		wp_register_style( 'eab_jquery_ui', EAB_PLUGIN_URL . 'css/smoothness/jquery-ui-1.8.16.custom.css', null, '1.8.16' );
 		wp_register_style( 'eab_front', EAB_PLUGIN_URL . 'css/front.css', null, self::CURRENT_VERSION );
 	
 		if ( isset( $_REQUEST['eab_step'] ) ) {
@@ -754,19 +753,19 @@ class Eab_EventsHub {
 					$no_end 	= $event->has_no_end_time( $key ) ? 'checked="checked"' : '';
 
 					$content .= '<div class="eab-section-block">';
-					$content .= '<div class="eab-section-heading">' . sprintf( __( 'Teil %d', self::TEXT_DOMAIN ), $key+1 ) . '&nbsp' . '<a href="#remove" class="eab-event-remove_time">' . __('Entferne', self::TEXT_DOMAIN) . '</a></div>';
+					$content .= '<div class="eab-section-heading">' . sprintf( __( 'Teil %s', self::TEXT_DOMAIN ), '<span class="eab-section-number">' . ( $key + 1 ) . '</span>' ) . '&nbsp; <a href="#remove" class="eab-event-remove_time">' . __('Entfernen', self::TEXT_DOMAIN) . '</a></div>';
 					$content .= '<div class="misc-eab-section eab-start-section"><label for="psource_event_start_'.$key.'">';
 					$content .= sprintf( __('%sEvent beginnt%s', self::TEXT_DOMAIN ), '<span>', '</span>' ).'</label>';
-					$content .= '<input type="text" name="psource_event_start['.$key.']" id="psource_event_start_'.$key.'" class="psource_event_picker psource_event psource_event_date psource_event_start" value="'.date('Y-m-d', $start).'" size="10" readonly/> ';
-					$content .= '<input type="text" name="psource_event_start_time['.$key.']" id="psource_event_start_time_'.$key.'" class="psource_event psource_event_time psource_event_time_picker psource_event_start_time" value="'.date('H:i', $start).'" size="3" style="position: relative; z-index:999;" readonly/>';
+					$content .= '<input type="date" name="psource_event_start['.$key.']" id="psource_event_start_'.$key.'" class="psource_event psource_event_date psource_event_start" value="'.date('Y-m-d', $start).'" /> ';
+					$content .= '<input type="time" aria-label="'.esc_attr__( 'Startzeit', self::TEXT_DOMAIN ).'" name="psource_event_start_time['.$key.']" id="psource_event_start_time_'.$key.'" class="psource_event psource_event_time psource_event_start_time" value="'.date('H:i', $start).'" />';
 					$content .= ' <input type="checkbox" name="psource_event_no_start_time['.$key.']" id="psource_event_no_start_time_'.$key.'" class="psource_event psource_event_time psource_event_no_start_time" value="1" ' . $no_start . ' />';
 					$content .= ' <label for="psource_event_no_start_time_'.$key.'">' . __( 'Keine Startzeit', self::TEXT_DOMAIN ) . '</label>';
 					$content .= '</div>';
 
 					$content .= '<div class="misc-eab-section"><label for="psource_event_end_'.$key.'">';
 					$content .= sprintf( __('%sEvent endet%s', self::TEXT_DOMAIN ), '<span>', '</span>' ).'</label>';
-					$content .= '<input type="text" name="psource_event_end['.$key.']" id="psource_event_end_'.$key.'" class="psource_event_picker psource_event psource_event_date psource_event_end" value="'.date('Y-m-d', $end).'" size="10" readonly/> ';
-					$content .= '<input type="text" name="psource_event_end_time['.$key.']" id="psource_event_end_time_'.$key.'" class="psource_event psource_event_time psource_event_time_picker psource_event_end_time" value="'.date('H:i', $end).'" size="3" style="position: relative; z-index:999;" readonly/>';
+					$content .= '<input type="date" name="psource_event_end['.$key.']" id="psource_event_end_'.$key.'" class="psource_event psource_event_date psource_event_end" value="'.date('Y-m-d', $end).'" /> ';
+					$content .= '<input type="time" aria-label="'.esc_attr__( 'Endzeit', self::TEXT_DOMAIN ).'" name="psource_event_end_time['.$key.']" id="psource_event_end_time_'.$key.'" class="psource_event psource_event_time psource_event_end_time" value="'.date('H:i', $end).'" />';
 					$content .= ' <input type="checkbox" name="psource_event_no_end_time['.$key.']" id="psource_event_no_end_time_'.$key.'" class="psource_event psource_event_time psource_event_no_end_time" value="1" ' . $no_end . ' />';
 					$content .= ' <label for="psource_event_no_end_time_'.$key.'">' . __( 'Keine Endzeit', self::TEXT_DOMAIN ) . '</label>';
 					$content .= '</div>';
@@ -775,19 +774,19 @@ class Eab_EventsHub {
 			} else {
 			    $i=0;
 			    $content .= '<div class="eab-section-block">';
-			    $content .= '<div class="eab-section-heading">' . sprintf(__( 'Teil %d', self::TEXT_DOMAIN ), $i+1) . '&nbsp' . '<a href="#remove" class="eab-event-remove_time">' . __('Entfernen', self::TEXT_DOMAIN) . '</a></div>';
+			    $content .= '<div class="eab-section-heading">' . sprintf( __( 'Teil %s', self::TEXT_DOMAIN ), '<span class="eab-section-number">1</span>' ) . '&nbsp; <a href="#remove" class="eab-event-remove_time">' . __('Entfernen', self::TEXT_DOMAIN) . '</a></div>';
 			    $content .= '<div class="misc-eab-section eab-start-section"><label class="eab-inline-label" for="psource_event_start_'.$i.'">';
 			    $content .= sprintf( __( '%sEvent beginnt%s', self::TEXT_DOMAIN ), '<span>', '</span>' ).'</label>';
-			    $content .= '<input type="text" name="psource_event_start['.$i.']" id="psource_event_start_'.$i.'" class="psource_event_picker psource_event psource_event_date psource_event_start" value="" size="10" readonly/> ';
-			    $content .= '<input type="text" name="psource_event_start_time['.$i.']" id="psource_event_start_time_'.$i.'" class="psource_event psource_event_time psource_event_time_picker psource_event_start_time" value="" size="3" style="position: relative; z-index:999;" readonly/>';
+			    $content .= '<input type="date" name="psource_event_start['.$i.']" id="psource_event_start_'.$i.'" class="psource_event psource_event_date psource_event_start" /> ';
+			    $content .= '<input type="time" aria-label="'.esc_attr__( 'Startzeit', self::TEXT_DOMAIN ).'" name="psource_event_start_time['.$i.']" id="psource_event_start_time_'.$i.'" class="psource_event psource_event_time psource_event_start_time" />';
 				$content .= ' <input type="checkbox" name="psource_event_no_start_time['.$i.']" id="psource_event_no_start_time_'.$i.'" class="psource_event psource_event_time psource_event_no_start_time" value="1" />';
 				$content .= ' <label for="psource_event_no_start_time_'.$i.'">' . __( 'Keine Startzeit', self::TEXT_DOMAIN ) . '</label>';
 			    $content .= '</div>';
 
 			    $content .= '<div class="misc-eab-section"><label class="eab-inline-label" for="psource_event_end_'.$i.'">';
 			    $content .= sprintf( __('%sEvent endet%s', self::TEXT_DOMAIN ), '<span>', '</span>' ).'</label>';
-			    $content .= '<input type="text" name="psource_event_end['.$i.']" id="psource_event_end_'.$i.'" class="psource_event_picker psource_event psource_event_date psource_event_end" value="" size="10" readonly/> ';
-			    $content .= '<input type="text" name="psource_event_end_time['.$i.']" id="psource_event_end_time_'.$i.'" class="psource_event psource_event_time psource_event_time_picker psource_event_end_time" value="" size="3" style="position: relative; z-index:999;" readonly/>';
+			    $content .= '<input type="date" name="psource_event_end['.$i.']" id="psource_event_end_'.$i.'" class="psource_event psource_event_date psource_event_end" /> ';
+			    $content .= '<input type="time" aria-label="'.esc_attr__( 'Endzeit', self::TEXT_DOMAIN ).'" name="psource_event_end_time['.$i.']" id="psource_event_end_time_'.$i.'" class="psource_event psource_event_time psource_event_end_time" />';
 				$content .= ' <input type="checkbox" name="psource_event_no_end_time['.$i.']" id="psource_event_no_end_time_'.$i.'" class="psource_event psource_event_time psource_event_no_end_time" value="1" />';
 				$content .= ' <label for="psource_event_no_end_time_'.$i.'">' . __( 'Keine Endzeit', self::TEXT_DOMAIN ) . '</label>';
 			    $content .= '</div>';
@@ -796,27 +795,25 @@ class Eab_EventsHub {
 			$content .= '</div>';
 
 			$content .= '<div id="eab-add-more"><input type="button" name="eab-add-more-button" id="eab-add-more-button" class="eab_add_more" value="'.__('Klicken um weiteres Datum hinzuzufügen', self::TEXT_DOMAIN).'"/></div>';
-			$i = !empty( $i ) ? $i : 0;
-
-			$content .= '<div id="eab-add-more-bank">';
+			$content .= '<template id="eab-add-more-bank">';
 			$content .= '<div class="eab-section-block">';
-			$content .= '<div class="eab-section-heading">' . sprintf(__('Teilbank', self::TEXT_DOMAIN), $i+1) . '&nbsp' . '<a href="#remove" class="eab-event-remove_time">' . __('Entfernen', self::TEXT_DOMAIN) . '</a></div>';
+			$content .= '<div class="eab-section-heading">' . sprintf( __( 'Teil %s', self::TEXT_DOMAIN ), '<span class="eab-section-number"></span>' ) . '&nbsp; <a href="#remove" class="eab-event-remove_time">' . __('Entfernen', self::TEXT_DOMAIN) . '</a></div>';
 			$content .= '<div class="misc-eab-section eab-start-section"><label for="psource_event_start_bank" >';
 			$content .= sprintf( __('%sEvent beginnt%s', self::TEXT_DOMAIN ), '<span>', '</span>' ).'</label>';
-			$content .= '<input type="text" name="psource_event_start_b[bank]" id="psource_event_start_bank" class="psource_event_picker_b psource_event psource_event_date psource_event_start_b" value="" size="10" readonly/> ';
-			$content .= '<input type="text" name="psource_event_start_time_b[bank]" id="psource_event_start_time_bank" class="psource_event psource_event_time psource_event_time_picker psource_event_start_time_b" value="" size="3" readonly/>';
+			$content .= '<input type="date" name="psource_event_start[bank]" id="psource_event_start_bank" class="psource_event psource_event_date psource_event_start" /> ';
+			$content .= '<input type="time" aria-label="'.esc_attr__( 'Startzeit', self::TEXT_DOMAIN ).'" name="psource_event_start_time[bank]" id="psource_event_start_time_bank" class="psource_event psource_event_time psource_event_start_time" />';
 			$content .= ' <input type="checkbox" name="psource_event_no_start_time[bank]" id="psource_event_no_start_time_bank" class="psource_event psource_event_time psource_event_no_start_time" value="1" />';
 			$content .= ' <label for="psource_event_no_start_time_bank">' . __('Keine Startzeit', self::TEXT_DOMAIN) . '</label>';
 			$content .= '</div>';
 
 			$content .= '<div class="misc-eab-section eab-end-section"><label for="psource_event_end_bank">';
 			$content .= sprintf( __('%sEvent endet%s', self::TEXT_DOMAIN ), '<span>', '</span>' ).'</label>';
-			$content .= '<input type="text" name="psource_event_end_b[bank]" id="psource_event_end_bank" class="psource_event_picker_b psource_event psource_event_date psource_event_end_b" value="" size="10" readonly/> ';
-			$content .= '<input type="text" name="psource_event_end_time_b[bank]" id="psource_event_end_time_bank" class="psource_event psource_event_time psource_event_time_picker psource_event_end_time_b" value="" size="3" readonly/>';
+			$content .= '<input type="date" name="psource_event_end[bank]" id="psource_event_end_bank" class="psource_event psource_event_date psource_event_end" /> ';
+			$content .= '<input type="time" aria-label="'.esc_attr__( 'Endzeit', self::TEXT_DOMAIN ).'" name="psource_event_end_time[bank]" id="psource_event_end_time_bank" class="psource_event psource_event_time psource_event_end_time" />';
 			$content .= ' <input type="checkbox" name="psource_event_no_end_time[bank]" id="psource_event_no_end_time_bank" class="psource_event psource_event_time psource_event_no_end_time" value="1" />';
 			$content .= ' <label for="psource_event_no_end_time_bank">' . __('Keine Endzeit', self::TEXT_DOMAIN) . '</label>';
 			$content .= '</div></div>';
-			$content .= '</div>';
+			$content .= '</template>';
 		} else {
 			$content .= $this->_meta_box_part_recurring_edit( $event );
 		}
@@ -868,6 +865,10 @@ class Eab_EventsHub {
 				'month' => '', 'weekday' => '', 'day' => '', 'time' => '', 'duration' => '',
 			)
 		);
+		$day = $parts['day'];
+		if ( preg_match( '/^\d{4}-\d{2}-(\d{2})$/D', $day, $matches ) ) {
+			$day = (int) $matches[1];
+		}
 
 		$starts_ts 	= $event->get_recurrence_starts();
 		$starts_ts 	= $starts_ts ? $starts_ts : eab_current_time();
@@ -879,7 +880,7 @@ class Eab_EventsHub {
 
 		// Start on...
 		$content 	.= '<label for="eab_event-repeat_start">' . __( 'Beginnt am', self::TEXT_DOMAIN );
-		$content 	.= ' <input type="text" name="eab_repeat[repeat_start]" id="eab_event-repeat_start" value="' . $starts . '" readonly/>';
+		$content 	.= ' <input type="date" name="eab_repeat[repeat_start]" id="eab_event-repeat_start" value="' . $starts . '"/>';
 		$content 	.= '</label>';
 
 		// Repeat every...
@@ -901,12 +902,12 @@ class Eab_EventsHub {
 			$content 	.= '<select name="eab_repeat[month]">';
 			for ( $i=1; $i<=12; $i++ ) {
 				$month 		= date( 'F', strtotime( "2012-{$i}-01" ) );
-				$selected 	= ( $month == $parts['month'] ) ? 'selected="selected"' : '';
+				$selected 	= selected( $i, $parts['month'], false );
 				$content 	.= "<option value='{$i}' {$selected}>{$month}</option>";
 			}
 			$content .= '</select> ';
-			$content .= __( 'Am', self::TEXT_DOMAIN ) . ' <input type="text" size="2" class="psource_event_picker" name="eab_repeat[day]" id="" value="' . $parts["day"] . '" readonly /> '; // Date
-			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="text" size="5" class="psource_event_time_picker" name="eab_repeat[time]" id="" value="' . $parts["time"] . '" readonly /> <small>HH:mm</small>'; // Time
+			$content .= __( 'Am', self::TEXT_DOMAIN ) . ' <input type="number" min="1" max="31" name="eab_repeat[day]" value="' . esc_attr( $day ) . '"/> '; // Date
+			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="time" name="eab_repeat[time]" value="' . $parts["time"] . '"/> <small>HH:mm</small>'; // Time
 			$content .= '</div>';
 		}
 
@@ -914,8 +915,8 @@ class Eab_EventsHub {
 		if ( in_array( Eab_EventModel::RECURRANCE_MONTHLY, array_keys( $supported_intervals ) ) ) {
 			$style 		= $event->is_recurring( Eab_EventModel::RECURRANCE_MONTHLY ) ? '' : 'style="display:none"';
 			$content 	.= '<div class="eab_event_recurrence_mode" id="eab_event-repeat_interval-' . Eab_EventModel::RECURRANCE_MONTHLY . '" ' . $style . '>';
-			$content 	.= __( 'Am', self::TEXT_DOMAIN ) . ' <input type="text" size="2" class="psource_event_picker" name="eab_repeat[day]" id="" value="' . $parts["day"] . '" readonly /> '; // Date
-			$content 	.= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="text" size="5" class="psource_event_time_picker" name="eab_repeat[time]" id="" value="' . $parts["time"] . '" readonly /> <small>HH:mm</small>'; // Time
+			$content .= __( 'Am', self::TEXT_DOMAIN ) . ' <input type="number" min="1" max="31" name="eab_repeat[day]" value="' . esc_attr( $day ) . '"/> '; // Date
+			$content 	.= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="time" name="eab_repeat[time]" value="' . $parts["time"] . '"/> <small>HH:mm</small>'; // Time
 			$content 	.= '</div>';
 		}
 
@@ -930,14 +931,14 @@ class Eab_EventsHub {
 					array_push( $all_weekdays, array_shift( $all_weekdays ) );
 				}
 			}
-			$tmp = strtotime( "this Sonntag" ) + ( $start_of_week * 86400 );
 			foreach ( $all_weekdays as $i ) {
 				$checked 	= ( is_array( $parts['weekday'] ) && in_array( $i, $parts['weekday'] ) ) ? 'checked="checked"' : '';
-				$content 	.= "<input type='checkbox' name='eab_repeat[weekday][]' id='' value='{$i}' {$checked} /> ";
-				$content 	.= "<label for=''>" . date( "D", $tmp ) . '</label><br />';
-				$tmp 		+= 86400;
+				$weekday_id = 'eab_event-repeat_weekday-' . $i;
+				$weekday_label = $GLOBALS['wp_locale']->get_weekday( $i );
+				$content 	.= "<input type='checkbox' name='eab_repeat[weekday][]' id='{$weekday_id}' value='{$i}' {$checked} /> ";
+				$content 	.= "<label for='{$weekday_id}'>" . esc_html( $weekday_label ) . '</label><br />';
 			}
-			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="text" size="5" name="eab_repeat[time]" class="psource_event_time_picker" id="" value="' . $parts["time"] . '" readonly /> <small>HH:mm</small>'; // Time
+			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="time" name="eab_repeat[time]" value="' . $parts["time"] . '"/> <small>HH:mm</small>'; // Time
 			$content .= '</div>';
 		}
 
@@ -979,7 +980,7 @@ class Eab_EventsHub {
 			$weekday .= '</select>';
 
 			$content .= sprintf( __( 'Jeden %s %s', self::TEXT_DOMAIN ), $week, $weekday ) . '<br />';
-			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="text" size="5" name="eab_repeat[time]" class="psource_event_time_picker" id="" value="' . $parts["time"] . '" readonly/> <small>HH:mm</small>'; // Time
+			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="time" name="eab_repeat[time]" value="' . $parts["time"] . '"/> <small>HH:mm</small>'; // Time
 			$content .= '</div>';
 		}
 
@@ -1013,7 +1014,7 @@ class Eab_EventsHub {
 			$weekday .= '</select>';
 
 			$content .= sprintf( __( 'Jede %s Woche, am %s', self::TEXT_DOMAIN ), $week, $weekday ) . '<br />';
-			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="text" size="5" name="eab_repeat[time]" class="psource_event_time_picker" id="" value="' . $parts["time"] . '" readonly/> <small>HH:mm</small>'; // Time
+			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="time" name="eab_repeat[time]" value="' . $parts["time"] . '"/> <small>HH:mm</small>'; // Time
 			$content .= '</div>';
 		}
 
@@ -1021,20 +1022,21 @@ class Eab_EventsHub {
 		if ( in_array( Eab_EventModel::RECURRANCE_DAILY, array_keys( $supported_intervals ) ) ) {
 			$style = $event->is_recurring( Eab_EventModel::RECURRANCE_DAILY ) ? '' : 'style="display:none"';
 			$content .= '<div class="eab_event_recurrence_mode" id="eab_event-repeat_interval-' . Eab_EventModel::RECURRANCE_DAILY . '" ' . $style . '>';
-			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="text" size="5" name="eab_repeat[time]" class="psource_event_time_picker" id="" value="' . $parts["time"] . '" readonly/> <small>HH:mm</small>'; // Time
+			$content .= __( 'Um', self::TEXT_DOMAIN ) . ' <input type="time" name="eab_repeat[time]" value="' . $parts["time"] . '"/> <small>HH:mm</small>'; // Time
 			$content .= '</div>';
 		}
 
 		// ... Until
 		$content .= '<br />';
 		$content .= '<label for="eab_event-repeat_end">' . __( 'Bis zum', self::TEXT_DOMAIN );
-		$content .= ' <input type="text" name="eab_repeat[repeat_end]" class="psource_event_picker" id="eab_event-repeat_end" value="' . $ends . '" readonly />';
+		$content .= ' <input type="date" name="eab_repeat[repeat_end]" id="eab_event-repeat_end" value="' . $ends . '"/>';
 		$content .= '</label>';
 
 		// ... Duration
 		$content .= '<br />';
 		$content .= '<label for="eab_event-repeat_event_duration">' . __( 'Ereignisdauer', self::TEXT_DOMAIN );
-		$content .= ' <input type="text" name="eab_repeat[duration]" class="psource_event_time_picker" size="2" id="eab_event-repeat_event_duration" value="' . $parts["duration"] . '" readonly/> ' . __( 'Stunden', self::TEXT_DOMAIN );
+		$duration_pattern = is_numeric( $parts['duration'] ) ? '' : ' pattern="[0-9]+:[0-5][0-9]"';
+		$content .= ' <input type="text" name="eab_repeat[duration]" id="eab_event-repeat_event_duration" size="6"' . $duration_pattern . ' placeholder="HH:MM" value="' . esc_attr( $parts["duration"] ) . '"/> ' . __( 'Stunden:Minuten', self::TEXT_DOMAIN );
 		$content .= '</label>';
 
 		$content .= '</div>';
@@ -1204,10 +1206,10 @@ class Eab_EventsHub {
 		}
 
 		// Setting up recurring event
-		if ( $is_valid_post_type && isset( $_POST['eab_repeat'] ) ) {
-			$repeat = array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['eab_repeat'] ) );
-			$start 	= !empty( $repeat['repeat_start'] ) ? strtotime( $repeat['repeat_start'] ) : eab_current_time();
-			$end 	= !empty( $repeat['repeat_end'] ) ? strtotime( $repeat['repeat_end'] ) : eab_current_time();
+		if ( $is_valid_post_type && !empty( $_POST['eab_repeat']['repeat_every'] ) ) {
+			$repeat = wp_unslash( (array) $_POST['eab_repeat'] );
+			$start 	= !empty( $repeat['repeat_start'] ) ? strtotime( sanitize_text_field( $repeat['repeat_start'] ) ) : eab_current_time();
+			$end 	= !empty( $repeat['repeat_end'] ) ? strtotime( sanitize_text_field( $repeat['repeat_end'] ) ) : eab_current_time();
 			if ( $end <= $start ) {
 				// BAH! Wrong order
 			}
@@ -1215,7 +1217,7 @@ class Eab_EventsHub {
 			$time_parts = array(
 				'month' 	=> isset( $repeat['month'] ) ? sanitize_text_field( $repeat['month'] ) : '',
 				'day' 		=> isset( $repeat['day'] ) ? sanitize_text_field( $repeat['day'] ) : '',
-				'weekday' 	=> isset( $repeat['weekday'] ) ? sanitize_text_field( $repeat['weekday'] ) : '',
+				'weekday' 	=> isset( $repeat['weekday'] ) ? ( is_array( $repeat['weekday'] ) ? array_map( 'absint', $repeat['weekday'] ) : sanitize_text_field( $repeat['weekday'] ) ) : '',
 				'week' 		=> isset( $repeat['week'] ) ? sanitize_text_field( $repeat['week'] ) : '',
 				'time' 		=> isset( $repeat['time'] ) ? sanitize_text_field( $repeat['time'] ) : '',
 				'duration' 	=> isset( $repeat['duration'] ) ? sanitize_text_field( $repeat['duration'] ) : '',

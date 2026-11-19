@@ -1,58 +1,5 @@
 jQuery(function($) {
-    /**
-     * Commenting the following if as datepicker doesn't work in mobile
-     */
-    //if (!("ontouchstart" in window)) {
-    jQuery(".psource_event_picker").datepicker({
-        "dateFormat": "yy-mm-dd",
-        "changeMonth": true,
-        "changeYear": true,
-        "defaultDate": new Date(),
-        "firstDay": parseInt(eab_event_localized.start_of_week, 10) ? parseInt(eab_event_localized.start_of_week, 10) : 0
-    });
-    jQuery('body').on('focus', '.psource_event_time_picker', function() {
-        $(this).timepicker({
-            showNowButton: true,
-            showDeselectButton: true,
-            showCloseButton: true,
-        });
-    });
-    //}
-
     jQuery('[href*="preview=true"]').hide(); // Preview won't work
-    jQuery("#eab-add-more").show();
-    jQuery("#eab-add-more-button").on("click", function() {
-        row_id = jQuery('.eab-start-section').length - 1;
-        jQuery("#eab-add-more-rows").append(jQuery("#eab-add-more-bank").html().replace(/_bank/gi, '_' + row_id).replace(/bank/gi, row_id + 1).replace(/_b/gi, ''));
-
-        jQuery("#psource_event_start_" + row_id + " , #psource_event_end_" + row_id).datepicker({
-            "dateFormat": "yy-mm-dd",
-            "changeMonth": true,
-            "changeYear": true,
-            "firstDay": parseInt(eab_event_localized.start_of_week, 10) ? parseInt(eab_event_localized.start_of_week, 10) : 0
-        });
-
-        jQuery("#psource_event_start_time_" + row_id + " , #psource_event_end_time_" + row_id).timepicker({
-            showNowButton: true,
-            showDeselectButton: true,
-            showCloseButton: true
-        });
-
-        if (jQuery('.eab-section-block').length > 2) {
-            jQuery('.eab-section-heading').show();
-        }
-    });
-
-    jQuery("body").on("click", ".eab-event-remove_time", function() {
-        var $remove = jQuery(this),
-            $parent = $remove.parents("#eab-add-more-rows"),
-            $starts = $parent.find(".eab-start-section"),
-            $target = $remove.parents(".eab-section-block");
-        if ($starts.length <= 1) return false; // Can't remove last one
-        if (!$target.length) return false; // Don't know what to remove
-        $target.remove();
-        return false;
-    });
 
     if (!jQuery("#psource_event-accept_payments").is(":checked")) {
         jQuery("#eab-settings-paypal").hide();
@@ -91,120 +38,6 @@ jQuery(function($) {
     }
     jQuery('#psource-event-wizard .hndle').append('<a href="edit.php?post_type=psource_event&page=eab_welcome" class="eab-expand-metabox">' + eab_event_localized["back_to_gettting_started"] + '</a>');
 
-    if (jQuery('.eab-section-block').length == 2) {
-        jQuery('.eab-section-heading').hide();
-    }
-
-    jQuery("#psource-event").on("change", 'input.psource_event', function() {
-        var _c = jQuery(this).attr('id').replace(/psource_event_[a-z_]+_/gi, '');
-        _eab_validate_when(_c);
-    });
-
-    jQuery("#psource-event").on("change", ".psource_event_no_start_time", function() {
-        var $me = jQuery(this),
-            _c = $me.attr('id').replace(/psource_event_[a-z_]+_/gi, '');
-        if ($me.is(":checked")) jQuery("#psource_event_start_time_" + _c).hide();
-        else jQuery("#psource_event_start_time_" + _c).show();
-    });
-    jQuery(".psource_event_no_start_time").each(function() { jQuery(this).trigger("change"); });
-
-    jQuery("#psource-event").on("change", ".psource_event_no_end_time", function() {
-        var $me = jQuery(this),
-            _c = $me.attr('id').replace(/psource_event_[a-z_]+_/gi, '');
-        if ($me.is(":checked")) jQuery("#psource_event_end_time_" + _c).hide();
-        else jQuery("#psource_event_end_time_" + _c).show();
-    });
-    jQuery(".psource_event_no_end_time").each(function() { jQuery(this).trigger("change"); });
-
-    jQuery("#psource-event").on("change", ".psource_event_start", function() {
-        var $me = jQuery(this),
-            $end = $me.parents(".eab-section-block").find(".psource_event_end"),
-            _c = $me.attr('id').replace(/psource_event_[a-z_]+_/gi, ''),
-            _start, _end, _tmp;
-        if (!$end.length) return true;
-        _tmp = _eab_get_stat_end_datetime(_c);
-        _start = _tmp.length ? _tmp[0] : false;
-        _end = _tmp.length ? _tmp[1] : false;
-        if (!_start || !_start.getTime) return true;
-        $end.datepicker("option", "defaultDate", _start);
-    });
-
-
-    jQuery('form#post').on( "submit", function() {
-        _c = 0;
-        if (jQuery("#eab_event-repeat_start").is(":visible")) return true;
-        if (_eab_validate_when(_c)) {
-            jQuery('#ajax-loading').show();
-            jQuery('#publish').removeClass('button-primary-disabled');
-            return true;
-        } else {
-            var $times = jQuery("#psource_event_times_label"),
-                top = $times.length ? $times.offset().top : 0;
-            jQuery('#ajax-loading').hide();
-            jQuery('#publish').removeClass('button-primary-disabled');
-            jQuery("html,body").scrollTop(top);
-            for (var pulse = 0; pulse < 3; pulse++) {
-                jQuery(".psource_event_date.error")
-                    .animate({ "border-width": 3 })
-                    .animate({ "border-width": 1 });
-            }
-            return false;
-        }
-    });
-
-    function _eab_get_stat_end_datetime(_c) {
-        var _start, _end;
-        _start = false;
-        if (jQuery('#psource_event_start_' + _c).val() != '') {
-            _start = new Date(jQuery('#psource_event_start_' + _c).val());
-            if (jQuery('#psource_event_start_time_' + _c).val() != '' || jQuery('#psource_event_no_start_time_' + _c).is(":checked")) {
-                var _start_time = (jQuery('#psource_event_no_start_time_' + _c).is(":checked") ? '00:01' : jQuery('#psource_event_start_time_' + _c).val()),
-                    _start_time_parts = _start_time.split(/:/gi);
-
-                _start.setHours(_start_time_parts[0]);
-                _start.setMinutes(_start_time_parts[1]);
-            }
-        }
-
-        _end = false;
-        if (jQuery('#psource_event_end_' + _c).length && jQuery('#psource_event_end_' + _c).val() != '') {
-            _end = new Date(jQuery('#psource_event_end_' + _c).val());
-            if (jQuery('#psource_event_end_time_' + _c).val() != '' || jQuery('#psource_event_no_end_time_' + _c).is(":checked")) {
-                var _end_time = (jQuery('#psource_event_no_end_time_' + _c).is(":checked") ? '23:59' : jQuery('#psource_event_end_time_' + _c).val()),
-                    _end_time_parts = _end_time.split(/:/gi);
-
-                _end.setHours(_end_time_parts[0]);
-                _end.setMinutes(_end_time_parts[1]);
-            }
-        }
-        return [_start, _end];
-    }
-
-    function _eab_validate_when(_c) {
-        if ("bank" == _c) return true; // Don't check bank dates - they're stubs
-        if (jQuery("#icl_translation_of").length) return true; // Assume translation
-
-        var _start, _end, _tmp;
-        _tmp = _eab_get_stat_end_datetime(_c);
-        _start = _tmp.length ? _tmp[0] : false;
-        _end = _tmp.length ? _tmp[1] : false;
-
-        if ((!_start || !_end) || _start.getTime() >= _end.getTime()) {
-            jQuery('#psource_event_start_' + _c).addClass('error');
-            jQuery('#psource_event_start_time_' + _c).addClass('error');
-            jQuery('#psource_event_end_' + _c).addClass('error');
-            jQuery('#psource_event_end_time_' + _c).addClass('error');
-            jQuery('input.button-primary.button-large').attr('disabled', true);
-            return false;
-        } else {
-            jQuery('#psource_event_start_' + _c).removeClass('error');
-            jQuery('#psource_event_start_time_' + _c).removeClass('error');
-            jQuery('#psource_event_end_' + _c).removeClass('error');
-            jQuery('#psource_event_end_time_' + _c).removeClass('error');
-            jQuery('input.button-primary.button-large').removeAttr('disabled');
-        }
-        return true;
-    }
 
     _eab_location = window.location;
 
@@ -226,71 +59,7 @@ jQuery(function($) {
             }
         }
 
-        // Recurrence toggling
-        function toggle_recurrence_settings() {
-            var text = $("#eab-eab-start_recurrence-button").val();
-            var alter = $("#eab-eab-start_recurrence-button").attr("data-eab-alter_label");
-            $("#eab-eab-start_recurrence-button").val(alter);
-            $("#eab-eab-start_recurrence-button").attr("data-eab-alter_label", text);
-            if (!$("#eab_event-recurring_event").is(":visible")) show_event_recurrence();
-            else hide_event_recurrence();
-            return false;
-        }
-
-        function show_event_recurrence() {
-            $("#eab_event-recurring_event").show();
-
-            $("#eab-add-more-rows").hide();
-            $("#eab-add-more").hide();
-
-            // Init jQuery UI date selectors
-            $("#eab_event-repeat_start,#eab_event-repeat_end").datepicker({
-                "dateFormat": "yy-mm-dd",
-                "changeMonth": true,
-                "changeYear": true,
-                "firstDay": parseInt(eab_event_localized.start_of_week, 10) ? parseInt(eab_event_localized.start_of_week, 10) : 0
-            });
-
-            // Kill WP stuff
-            $("#edit-slug-box").hide();
-            toggle_recurrence_mode(true);
-        }
-
-        function hide_event_recurrence() {
-            $("#eab_event-recurring_event").hide();
-
-            $("#eab-add-more-rows").show();
-            $("#eab-add-more").show();
-            $("#edit-slug-box").show();
-        }
-
-        // Recurrence mode toggling
-        function toggle_recurrence_mode(e) {
-            $(".eab_event_recurrence_mode").hide();
-
-            var val = $("#eab_event-repeat_every").val();
-            if (!val && "undefined" !== typeof e) {
-                $("#publish").attr("disabled", true);
-                return false;
-            }
-            var $el = $("#eab_event-repeat_interval-" + val);
-            if (!$el.length) return false;
-
-            $(".eab_event_recurrence_mode").find("input,select").attr("disabled", true);
-            $el.find("input,select").attr("disabled", false);
-            $("#publish").attr("disabled", false);
-            $el.show();
-
-            // Init jQuery UI date selectors
-            $("#eab_event-repeat_start,#eab_event-repeat_end").datepicker({
-                "dateFormat": "yy-mm-dd",
-                "changeMonth": true,
-                "changeYear": true,
-                "firstDay": parseInt(eab_event_localized.start_of_week, 10) ? parseInt(eab_event_localized.start_of_week, 10) : 0
-            });
-        }
-
-        // Recurrence instance editing toggling
+         // Recurrence instance editing toggling
         function toggle_recurrence_instances() {
             if ($("#eab_event-recurring_instances").is(":visible")) $("#eab_event-recurring_instances").hide();
             else $("#eab_event-recurring_instances").show();
@@ -318,15 +87,8 @@ jQuery(function($) {
                 return false;
             });
 
-            // Init recurrence toggle
-            $("#eab-eab-start_recurrence-button").on("click", toggle_recurrence_settings);
-            // Init recurrence mode toggle
-            $("#eab_event-repeat_every").on("change", toggle_recurrence_mode);
-            toggle_recurrence_mode();
             // Init recurrence instances toggle
             $("#eab_event-edit_recurring_instances").on("click", toggle_recurrence_instances);
-            // Initialize slug box
-            if ($("#eab_event-repeat_every").is(":visible")) $("#edit-slug-box").hide();
 
             // Attendance canceling
             $("body").on("click", ".eab-guest-cancel_attendance", function() {
@@ -374,11 +136,6 @@ jQuery(function($) {
                 return false;
             });
 
-            var $times = $("#psource-event input.psource_event");
-            $times.each(function() {
-                var _c = $(this).attr('id').replace(/psource_event_[a-z_]+_/gi, '');
-                _eab_validate_when(_c);
-            });
 
         });
     })(jQuery);

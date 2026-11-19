@@ -34,18 +34,9 @@ class Eab_Admin {
 		if ( ! $this->_blog_has_tables() )
 			eab_activate();
 
-		if (get_option('eab_activation_redirect', false)) {
-			delete_option('eab_activation_redirect');
-			if (!(is_multisite() && is_super_admin()) || !is_network_admin()) {
-				wp_redirect('edit.php?post_type=psource_event&page=eab_welcome');
-			}
-		}
-
 		// Register scripts/styles
-		wp_register_script('eab_jquery_timepicker', EAB_PLUGIN_URL . 'js/jquery.ui.timepicker.js', array('jquery'), Eab_EventsHub::CURRENT_VERSION);
-		wp_register_script('eab_datepicker_compat', EAB_PLUGIN_URL . 'js/jquery-ui.custom.min.js', array('jquery'), Eab_EventsHub::CURRENT_VERSION);
-		wp_register_script('eab_admin_js', EAB_PLUGIN_URL . 'js/eab-admin.js', array('jquery', 'eab_datepicker_compat'), Eab_EventsHub::CURRENT_VERSION);
-		wp_register_style('eab_jquery_timepicker', EAB_PLUGIN_URL . 'css/jquery.ui.timepicker.css', null, Eab_EventsHub::CURRENT_VERSION);
+		wp_register_script('eab_event_dates', EAB_PLUGIN_URL . 'js/eab-event-dates.js', array(), Eab_EventsHub::CURRENT_VERSION, true);
+		wp_register_script('eab_admin_js', EAB_PLUGIN_URL . 'js/eab-admin.js', array('jquery'), filemtime(EAB_PLUGIN_DIR . 'js/eab-admin.js'));
 		wp_register_style('eab_admin', EAB_PLUGIN_URL . 'css/admin.min.css', null, Eab_EventsHub::CURRENT_VERSION);
 
 		if (defined('AGM_PLUGIN_URL')) {
@@ -56,7 +47,6 @@ class Eab_Admin {
 		$event_localized = array(
 			'view_all_bookings' 		=> __('Zeige Reaktionen', 'eab'),
 			'back_to_gettting_started' 	=> __('Zurück zur Übersicht', 'eab'),
-			'start_of_week' 			=> get_option('start_of_week'),
 		);
 
 		wp_localize_script('eab_admin_js', 'eab_event_localized', $event_localized);
@@ -76,24 +66,25 @@ class Eab_Admin {
 	private function _blog_has_tables () {
 		global $wpdb;
 		$table = Eab_EventsHub::tablename(Eab_EventsHub::BOOKING_TABLE); // Check only one
-		if ( ! $stored_table = $wpdb->get_var("show tables like '{$table}'") ) return false;
+		if ( ! $stored_table = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) ) return false;
 		return strtolower($stored_table) == strtolower($table); // we are lowercasing cause uppercase is possible here;
 	}
 
 	function admin_enqueue_scripts() {
 		if (!$this->_check_admin_page_id())
 			return;
-		wp_enqueue_script('eab_jquery_ui');
-		wp_enqueue_script('eab_datepicker_compat');
-		wp_enqueue_script('eab_jquery_timepicker');
+		if ( 'psource_event' === get_current_screen()->id ) {
+			wp_enqueue_script('eab_event_dates');
+			wp_localize_script('eab_event_dates', 'eabEventDates', array(
+				'invalidRange' => __('Gib einen Start und ein Ende ein. Das Ende muss nach dem Start liegen.', 'eab'),
+			));
+		}
 		wp_enqueue_script('eab_admin_js');
 	}
 
 	function admin_print_styles() {
 		if (!$this->_check_admin_page_id())
 			return;
-		wp_enqueue_style('eab_jquery_ui');
-		wp_enqueue_style('eab_jquery_timepicker');
 		wp_enqueue_style('eab_admin');
 	}
 

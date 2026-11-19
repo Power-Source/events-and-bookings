@@ -57,8 +57,6 @@ class Eab_Activator {
 
 		if ( ! get_option( 'event_default', false ) )
 			add_option( 'event_default', array() );
-		if ( ! get_option( 'eab_activation_redirect' ) )
-			add_option( 'eab_activation_redirect', true );
 	}
 
 }

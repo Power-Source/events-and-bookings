@@ -35,7 +35,6 @@ class Eab_Payment_MultiplePrices {
 			$screen = get_current_screen();
 			if (!preg_match('/' . preg_quote(Eab_EventModel::POST_TYPE, '/') . '/', $screen->id)) return false; // Add on used pages
 		}
-		//wp_enqueue_script('jquery-multiselect',plugins_url('events-and-bookings/js/').'jquery.multiselect.min.js',array('jquery','jquery-ui-widget'));
 		echo <<<EOJs
 <script type="text/javascript">
 (function ($) {

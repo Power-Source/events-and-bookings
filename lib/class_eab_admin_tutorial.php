@@ -20,8 +20,7 @@ class Eab_AdminTutorial {
         // Load the file
         require_once(EAB_PLUGIN_DIR . 'lib/pointers-tutorial/pointer-tutorials.php');
 
-        // Create our tutorial, with default redirect prefs
-        $tutorial = new Pointer_Tutorial('eab_tutorial', true, false, 'eab', 'manage_options');
+        $tutorial = new Pointer_Tutorial('eab_tutorial', __('Veranstaltungen', 'eab'), false, false);
 
         // Adding individual tutorial steps
         $tutorial->add_step(admin_url('post-new.php?post_type=psource_event'), 'post-new.php', '#title', __('Ereignistitel', 'eab'), array(

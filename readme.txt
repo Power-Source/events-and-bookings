@@ -2,9 +2,11 @@
 Contributors: DerN3rd (PSOURCE)
 Tags: multisite, events, kalender, buddypress
 Requires at least: 4.9
-Tested up to: 6.8.1
+Requires CP: 2.7
+Tested up to: 7.1.4
+ClassicPress: 2.7.4
 Stable tag: 1.0.1
-Requires PHP: 7.0
+Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +79,8 @@ Begeistere die Teilnehmer für Deine Veranstaltung. Verbreite das Wort mit autom
 == ChangeLog ==
 
 = 1.0.2 =
+* Fix: Native Datums- und Uhrzeitfelder ersetzen jQuery UI im Veranstaltungseditor.
+* Fix: Die Plugin-Aktivierung und das Tutorial leiten nicht mehr ungefragt zum Veranstaltungseditor weiter.
 * Fix: PHP Warning "Undefined variable $html" im Widget lib/widgets/NetworkUpcoming_Widget.class.php behoben, indem der Formular-HTML-Accumulator vor der Verwendung initialisiert wird
 * Fix: Das Teilnahmeformular sendet die angemeldete Benutzer-ID statt der Buchungs-ID. Reguläre Teilnehmer können dadurch erstmals zusagen und ihre Antwort später ändern, ohne an der Identitätsprüfung zu scheitern.
 * Fix: Der nach Metadaten-ID sortierte Datumscache wird beim Hinzufügen, Ändern und Löschen von Terminzeiten geleert. Veranstaltungsansichten und Integrationen erhalten dadurch keine veralteten Zeiten.
